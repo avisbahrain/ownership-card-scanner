@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#111827">
+
+  <title>Document Scanner</title>
+
+  <link rel="stylesheet" href="style.css">
+
+  <!-- OpenCV.js for document edge detection / perspective correction -->
+  <script async src="https://docs.opencv.org/4.x/opencv.js"></script>
+
+  <!-- jsPDF for PDF generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
+</head>
+
+<body>
+
+  <header class="topbar">
+    <div>
+      <h1>Document Scanner</h1>
+      <p>Front & Back Scanner</p>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- START SCREEN -->
+    <section id="startScreen" class="screen active">
+      <div class="hero">
+        <div class="scanner-icon">▣</div>
+
+        <h2>Scan your documents</h2>
+
+        <p>
+          Capture the Front and Back of each document.
+          Add unlimited pages and download everything as one PDF.
+        </p>
+
+        <button id="startBtn" class="primary-btn">
+          📷 Start Scanning
+        </button>
+      </div>
+    </section>
+
+
+    <!-- CAMERA SCREEN -->
+    <section id="cameraScreen" class="screen">
+
+      <div class="progress">
+        <span id="pageLabel">Page 1</span>
+        <span id="sideLabel">Front</span>
+      </div>
+
+      <div class="camera-container">
+
+        <video
+          id="video"
+          autoplay
+          playsinline
+          muted>
+        </video>
+
+        <div id="documentGuide" class="document-guide">
+          <div class="corner tl"></div>
+          <div class="corner tr"></div>
+          <div class="corner bl"></div>
+          <div class="corner br"></div>
+        </div>
+
+        <div id="edgeStatus" class="edge-status">
+          Looking for document edges...
+        </div>
+
+      </div>
+
+      <div class="camera-controls">
+
+        <button id="switchCameraBtn" class="secondary-btn">
+          🔄 Camera
+        </button>
+
+        <button id="captureBtn" class="capture-btn">
+          <span></span>
+        </button>
+
+        <button id="cancelCameraBtn" class="secondary-btn">
+          ✕ Cancel
+        </button>
+
+      </div>
+
+    </section>
+
+
+    <!-- PREVIEW SCREEN -->
+    <section id="previewScreen" class="screen">
+
+      <div class="page-header">
+        <div>
+          <h2 id="previewTitle">Page 1</h2>
+          <p id="previewSubtitle">Front & Back</p>
+        </div>
+      </div>
+
+      <div class="preview-grid">
+
+        <div class="preview-card">
+          <div class="preview-label">
+            <span>Front</span>
+            <button id="retakeFrontBtn">Retake</button>
+          </div>
+
+          <img id="frontPreview" alt="Front">
+        </div>
+
+
+        <div class="preview-card">
+          <div class="preview-label">
+            <span>Back</span>
+            <button id="retakeBackBtn">Retake</button>
+          </div>
+
+          <img id="backPreview" alt="Back">
+        </div>
+
+      </div>
+
+      <div class="preview-actions">
+
+        <button id="addPageBtn" class="primary-btn">
+          + Add Next Page
+        </button>
+
+        <button id="finishBtn" class="download-btn">
+          📄 Download PDF
+        </button>
+
+      </div>
+
+    </section>
+
+
+    <!-- DOCUMENTS SCREEN -->
+    <section id="documentsScreen" class="screen">
+
+      <div class="documents-header">
+        <div>
+          <h2>Scanned Pages</h2>
+          <p id="pageCount">0 pages</p>
+        </div>
+      </div>
+
+      <div id="pagesList" class="pages-list"></div>
+
+      <div class="bottom-actions">
+
+        <button id="addAnotherBtn" class="primary-btn">
+          + Scan Another Page
+        </button>
+
+        <button id="downloadPdfBtn" class="download-btn">
+          📄 Download PDF
+        </button>
+
+        <button id="clearAllBtn" class="danger-btn">
+          Clear All
+        </button>
+
+      </div>
+
+    </section>
+
+  </main>
+
+
+  <!-- Hidden canvas used for camera capture -->
+  <canvas id="captureCanvas"></canvas>
+
+  <!-- Hidden canvas used for processing -->
+  <canvas id="processingCanvas"></canvas>
+
+
+  <!-- PROCESSING MODAL -->
+  <div id="processingModal" class="modal">
+
+    <div class="modal-box">
+
+      <div class="spinner"></div>
+
+      <h3>Processing document...</h3>
+
+      <p id="processingText">
+        Detecting document edges
+      </p>
+
+    </div>
+
+  </div>
+
+
+  <script src="app.js"></script>
+
+</body>
+</html>
