@@ -1,5 +1,27 @@
 /* =========================================================
-   CARD SCANNER
+   ID CARD SCANNER
+   =========================================================
+
+   IMPORTANT BEHAVIOR:
+
+   1. Camera opens.
+   2. Card detection runs only as a visual guide.
+   3. Detection NEVER automatically captures.
+   4. User MUST press the Capture button.
+   5. Capture ALWAYS works if the camera is ready.
+   6. If edge detection succeeds:
+        -> perspective correction is applied.
+   7. If edge detection fails:
+        -> original captured photo is used.
+   8. Front -> Back -> Preview.
+   9. Unlimited pages.
+   10. Two images per PDF page.
+
+========================================================= */
+
+
+/* =========================================================
+   STATE
 ========================================================= */
 
 let pages = [];
@@ -16,6 +38,8 @@ let cameraStream = null;
 let usingFrontCamera = false;
 
 let opencvReady = false;
+
+let detectionTimer = null;
 
 
 /* =========================================================
@@ -124,7 +148,7 @@ const processingText =
 
 
 /* =========================================================
-   OPENCV
+   OPENCV LOAD CHECK
 ========================================================= */
 
 function checkOpenCV() {
@@ -137,7 +161,7 @@ function checkOpenCV() {
     opencvReady = true;
 
     console.log(
-      "OpenCV ready"
+      "OpenCV is ready."
     );
 
     return;
@@ -153,7 +177,7 @@ checkOpenCV();
 
 
 /* =========================================================
-   SCREEN
+   SCREEN CONTROL
 ========================================================= */
 
 function showScreen(screen) {
@@ -163,13 +187,17 @@ function showScreen(screen) {
     cameraScreen,
     previewScreen,
     documentsScreen
+
   ].forEach(
     element => {
+
       element.classList.remove(
         "active"
       );
+
     }
   );
+
 
   screen.classList.add(
     "active"
@@ -206,12 +234,15 @@ startBtn.addEventListener(
 
 
 /* =========================================================
-   CAMERA
+   START CAMERA
 ========================================================= */
 
 async function startCamera() {
 
   stopCamera();
+
+  stopDetectionLoop();
+
 
   if (
     !navigator.mediaDevices ||
@@ -220,7 +251,7 @@ async function startCamera() {
 
     alert(
       "Camera is not available.\n\n" +
-      "Open this website using HTTPS."
+      "Please open this website using HTTPS."
     );
 
     return;
@@ -230,9 +261,7 @@ async function startCamera() {
   try {
 
     /*
-     * Simple constraints.
-     *
-     * Rear camera is used by default.
+     * Rear camera by default.
      */
 
     const constraints = {
@@ -252,6 +281,10 @@ async function startCamera() {
 
         height: {
           ideal: 1080
+        },
+
+        frameRate: {
+          ideal: 30
         }
 
       }
@@ -279,7 +312,7 @@ async function startCamera() {
 
 
     /*
-     * Wait for video.
+     * Wait for video metadata.
      */
 
     await new Promise(
@@ -310,12 +343,17 @@ async function startCamera() {
 
 
     edgeStatus.textContent =
-      "Position card inside the frame";
+      "Align card inside the frame";
 
 
-    console.log(
-      "Camera opened successfully"
-    );
+    /*
+     * Detection starts only as
+     * a visual guide.
+
+     * It does NOT capture anything.
+     */
+
+    startDetectionLoop();
 
 
   } catch (error) {
@@ -345,63 +383,66 @@ function handleCameraError(
     "Unable to open camera.\n\n";
 
 
-  switch (
-    error.name
+  if (
+    error.name ===
+    "NotAllowedError"
   ) {
 
-    case "NotAllowedError":
+    message +=
+      "Camera permission was denied.\n\n" +
 
-      message +=
-        "Camera permission was denied.\n\n" +
+      "Please allow camera access " +
+      "in your browser settings.";
 
-        "Please allow camera access " +
-        "in your browser settings.";
+  }
 
-      break;
+  else if (
+    error.name ===
+    "NotFoundError"
+  ) {
 
+    message +=
+      "No camera was found.";
 
-    case "NotFoundError":
+  }
 
-      message +=
-        "No camera was found.";
+  else if (
+    error.name ===
+    "NotReadableError"
+  ) {
 
-      break;
+    message +=
+      "The camera is already being used " +
+      "by another application.";
 
+  }
 
-    case "NotReadableError":
+  else if (
+    error.name ===
+    "OverconstrainedError"
+  ) {
 
-      message +=
-        "The camera is already being used " +
-        "by another application.";
+    message +=
+      "The selected camera does not support " +
+      "the requested settings.";
 
-      break;
+  }
 
+  else if (
+    error.name ===
+    "SecurityError"
+  ) {
 
-    case "OverconstrainedError":
+    message +=
+      "Camera access was blocked by the browser.";
 
-      message +=
-        "This camera does not support " +
-        "the requested settings.";
+  }
 
-      break;
+  else {
 
-
-    case "SecurityError":
-
-      message +=
-        "Camera access was blocked by " +
-        "the browser.";
-
-      break;
-
-
-    default:
-
-      message +=
-        error.message ||
-        "Unknown camera error.";
-
-      break;
+    message +=
+      error.message ||
+      "Unknown camera error.";
   }
 
 
@@ -414,6 +455,9 @@ function handleCameraError(
 ========================================================= */
 
 function stopCamera() {
+
+  stopDetectionLoop();
+
 
   if (
     !cameraStream
@@ -482,7 +526,7 @@ function updateCameraUI() {
       "Scan Front";
 
     instructionText.textContent =
-      "Place the entire card inside the frame";
+      "Position the card, then press Capture";
 
   } else {
 
@@ -493,15 +537,211 @@ function updateCameraUI() {
       "Scan Back";
 
     instructionText.textContent =
-      "Place the entire card inside the frame";
+      "Position the card, then press Capture";
 
   }
 }
 
 
 /* =========================================================
-   CAPTURE
+   DETECTION LOOP
 ========================================================= */
+
+/*
+   This function ONLY updates the green guide.
+
+   It NEVER captures.
+*/
+
+function startDetectionLoop() {
+
+  stopDetectionLoop();
+
+
+  if (
+    !opencvReady
+  ) {
+
+    edgeStatus.textContent =
+      "Position card inside the frame";
+
+    return;
+  }
+
+
+  detectionTimer =
+    setInterval(
+      () => {
+
+        if (
+          !video.videoWidth ||
+          !video.videoHeight
+        ) {
+
+          return;
+        }
+
+
+        if (
+          processingModal.classList.contains(
+            "show"
+          )
+        ) {
+
+          return;
+        }
+
+
+        detectGuideOnly();
+
+      },
+
+      500
+    );
+}
+
+
+/* =========================================================
+   STOP DETECTION LOOP
+========================================================= */
+
+function stopDetectionLoop() {
+
+  if (
+    detectionTimer
+  ) {
+
+    clearInterval(
+      detectionTimer
+    );
+
+    detectionTimer = null;
+  }
+}
+
+
+/* =========================================================
+   GUIDE DETECTION
+========================================================= */
+
+function detectGuideOnly() {
+
+  if (
+    !opencvReady
+  ) {
+
+    return;
+  }
+
+
+  try {
+
+    /*
+     * Small temporary canvas.
+     */
+
+    const width =
+      Math.min(
+        video.videoWidth,
+        900
+      );
+
+
+    const ratio =
+      video.videoHeight /
+      video.videoWidth;
+
+
+    const height =
+      Math.round(
+        width * ratio
+      );
+
+
+    const canvas =
+      document.createElement(
+        "canvas"
+      );
+
+
+    canvas.width =
+      width;
+
+    canvas.height =
+      height;
+
+
+    const context =
+      canvas.getContext(
+        "2d"
+      );
+
+
+    context.drawImage(
+      video,
+      0,
+      0,
+      width,
+      height
+    );
+
+
+    const detected =
+      findCardCorners(
+        canvas
+      );
+
+
+    if (
+      detected
+    ) {
+
+      documentGuide.classList.add(
+        "detected"
+      );
+
+      edgeStatus.textContent =
+        "✓ Card detected — press Capture";
+
+    } else {
+
+      documentGuide.classList.remove(
+        "detected"
+      );
+
+      edgeStatus.textContent =
+        "Align card inside the frame";
+
+    }
+
+  } catch (error) {
+
+    /*
+     * Detection failure should NEVER
+     * affect capture.
+     */
+
+    documentGuide.classList.remove(
+      "detected"
+    );
+
+    edgeStatus.textContent =
+      "Press Capture when ready";
+  }
+}
+
+
+/* =========================================================
+   CAPTURE BUTTON
+========================================================= */
+
+/*
+   THIS IS THE IMPORTANT PART.
+
+   Detection does NOT capture.
+
+   The user MUST press this button.
+*/
 
 captureBtn.addEventListener(
   "click",
@@ -509,7 +749,16 @@ captureBtn.addEventListener(
 );
 
 
+/* =========================================================
+   CAPTURE PHOTO
+========================================================= */
+
 async function capturePhoto() {
+
+  /*
+   * Make absolutely sure
+   * the camera is ready.
+   */
 
   if (
     !video.videoWidth ||
@@ -524,16 +773,40 @@ async function capturePhoto() {
   }
 
 
+  /*
+   * Stop guide detection
+   * while capturing.
+   */
+
+  stopDetectionLoop();
+
+
+  /*
+   * Prevent double tapping.
+   */
+
+  captureBtn.disabled =
+    true;
+
+
   showProcessing(
-    "Capturing..."
+    "Capturing photo..."
   );
 
 
   try {
 
+    /*
+     * CAPTURE ALWAYS HAPPENS.
+     */
+
     const image =
       await captureAndProcess();
 
+
+    /*
+     * FRONT
+     */
 
     if (
       currentSide ===
@@ -543,13 +816,27 @@ async function capturePhoto() {
       currentPage.front =
         image;
 
+
       currentSide =
         "back";
 
 
       hideProcessing();
 
+
+      captureBtn.disabled =
+        false;
+
+
       updateCameraUI();
+
+
+      /*
+       * Detection can run again
+       * for the BACK.
+       */
+
+      startDetectionLoop();
 
 
       edgeStatus.textContent =
@@ -560,31 +847,60 @@ async function capturePhoto() {
     }
 
 
+    /*
+     * BACK
+     */
+
     currentPage.back =
       image;
 
 
     stopCamera();
 
+
+    captureBtn.disabled =
+      false;
+
+
     hideProcessing();
+
 
     showPreview();
 
+
   } catch (error) {
 
-    console.error(error);
+    console.error(
+      "Capture error:",
+      error
+    );
+
+
+    captureBtn.disabled =
+      false;
+
 
     hideProcessing();
 
+
+    /*
+     * Even if processing fails,
+     * we do not silently fail.
+     */
+
     alert(
-      "Could not capture the card."
+      "Could not capture the card.\n\n" +
+      "Please try again."
     );
+
+
+    startDetectionLoop();
   }
 }
 
 
 /* =========================================================
-   CAPTURE IMAGE
+   CAPTURE + OPTIONAL PROCESSING
 ========================================================= */
 
 async function captureAndProcess() {
@@ -597,8 +913,7 @@ async function captureAndProcess() {
 
 
   /*
-   * Don't create extremely
-   * large browser images.
+   * Limit maximum image size.
    */
 
   const maxWidth =
@@ -614,8 +929,10 @@ async function captureAndProcess() {
       maxWidth /
       width;
 
+
     width =
       maxWidth;
+
 
     height =
       Math.round(
@@ -638,7 +955,7 @@ async function captureAndProcess() {
 
 
   /*
-   * Draw normally.
+   * Capture current camera frame.
    */
 
   context.drawImage(
@@ -650,6 +967,10 @@ async function captureAndProcess() {
   );
 
 
+  /*
+   * THIS IMAGE IS ALWAYS AVAILABLE.
+   */
+
   const original =
     captureCanvas.toDataURL(
       "image/jpeg",
@@ -658,8 +979,12 @@ async function captureAndProcess() {
 
 
   /*
-   * If OpenCV is unavailable,
-   * use the normal image.
+   * Try edge detection.
+
+   * It is optional.
+
+   * If it fails,
+   * original is returned.
    */
 
   if (
@@ -671,33 +996,72 @@ async function captureAndProcess() {
 
 
   processingText.textContent =
-    "Detecting card edges...";
+    "Checking card edges...";
 
 
-  const result =
-    detectCard(
-      captureCanvas
+  try {
+
+    const corrected =
+      processCard(
+        captureCanvas
+      );
+
+
+    /*
+     * Detection successful.
+     */
+
+    if (
+      corrected
+    ) {
+
+      return corrected;
+    }
+
+
+    /*
+     * Detection failed.
+
+     * IMPORTANT:
+     * We STILL RETURN THE PHOTO.
+     */
+
+    return original;
+
+  } catch (error) {
+
+    console.error(
+      "Processing error:",
+      error
     );
 
 
-  return (
-    result ||
-    original
-  );
+    return original;
+  }
 }
 
 
 /* =========================================================
-   DETECT CARD
+   FIND CARD CORNERS
 ========================================================= */
 
-function detectCard(
+function findCardCorners(
   canvas
 ) {
 
+  let src = null;
+  let small = null;
+  let gray = null;
+  let blurred = null;
+  let edges = null;
+  let contours = null;
+  let hierarchy = null;
+  let bestContour = null;
+
+
   try {
 
-    const src =
+    src =
       cv.imread(
         canvas
       );
@@ -712,12 +1076,8 @@ function detectCard(
     }
 
 
-    /*
-     * Resize for processing.
-     */
-
     const maxDimension =
-      1400;
+      1000;
 
 
     let scale = 1;
@@ -740,7 +1100,7 @@ function detectCard(
     }
 
 
-    const small =
+    small =
       new cv.Mat();
 
 
@@ -767,11 +1127,7 @@ function detectCard(
     );
 
 
-    /*
-     * Gray
-     */
-
-    const gray =
+    gray =
       new cv.Mat();
 
 
@@ -782,11 +1138,7 @@ function detectCard(
     );
 
 
-    /*
-     * Blur
-     */
-
-    const blurred =
+    blurred =
       new cv.Mat();
 
 
@@ -803,11 +1155,7 @@ function detectCard(
     );
 
 
-    /*
-     * Edge detection
-     */
-
-    const edges =
+    edges =
       new cv.Mat();
 
 
@@ -819,15 +1167,11 @@ function detectCard(
     );
 
 
-    /*
-     * Find contours
-     */
-
-    const contours =
+    contours =
       new cv.MatVector();
 
 
-    const hierarchy =
+    hierarchy =
       new cv.Mat();
 
 
@@ -851,10 +1195,8 @@ function detectCard(
       1.586;
 
 
-    let bestContour =
-      null;
-
-    let bestScore = 0;
+    let bestScore =
+      0;
 
 
     for (
@@ -872,10 +1214,6 @@ function detectCard(
           contour
         );
 
-
-      /*
-       * Ignore small objects.
-       */
 
       if (
         area <
@@ -931,19 +1269,15 @@ function detectCard(
           );
 
 
-        const ratioDifference =
+        const difference =
           Math.abs(
             ratio -
             targetRatio
           );
 
 
-        /*
-         * Credit-card shape.
-         */
-
         if (
-          ratioDifference <
+          difference <
           0.50
         ) {
 
@@ -955,7 +1289,390 @@ function detectCard(
           const ratioScore =
             1 -
             (
-              ratioDifference /
+              difference /
+              0.50
+            );
+
+
+          const score =
+            areaRatio *
+            0.65 +
+
+            ratioScore *
+            0.35;
+
+
+          if (
+            score >
+            bestScore
+          ) {
+
+            if (
+              bestContour
+            ) {
+
+              bestContour.delete();
+
+            }
+
+
+            bestContour =
+              approx;
+
+            bestScore =
+              score;
+
+          } else {
+
+            approx.delete();
+
+          }
+
+        } else {
+
+          approx.delete();
+
+        }
+
+      } else {
+
+        approx.delete();
+
+      }
+
+
+      contour.delete();
+    }
+
+
+    if (
+      !bestContour
+    ) {
+
+      return null;
+    }
+
+
+    const points =
+      [];
+
+
+    for (
+      let i = 0;
+      i < bestContour.rows;
+      i++
+    ) {
+
+      points.push({
+
+        x:
+          bestContour.data32S[
+            i * 2
+          ],
+
+        y:
+          bestContour.data32S[
+            i * 2 + 1
+          ]
+
+      });
+
+    }
+
+
+    if (
+      points.length !== 4
+    ) {
+
+      return null;
+    }
+
+
+    return points;
+
+  } catch (error) {
+
+    console.error(
+      "Find corners error:",
+      error
+    );
+
+
+    return null;
+
+  } finally {
+
+    cleanup(
+      src,
+      small,
+      gray,
+      blurred,
+      edges,
+      contours,
+      hierarchy,
+      bestContour
+    );
+  }
+}
+
+
+/* =========================================================
+   PROCESS CARD
+========================================================= */
+
+function processCard(
+  canvas
+) {
+
+  let src = null;
+  let small = null;
+  let gray = null;
+  let blurred = null;
+  let edges = null;
+  let contours = null;
+  let hierarchy = null;
+  let bestContour = null;
+  let sourcePoints = null;
+  let destinationPoints = null;
+  let transform = null;
+  let result = null;
+
+
+  try {
+
+    src =
+      cv.imread(
+        canvas
+      );
+
+
+    if (
+      !src ||
+      src.empty()
+    ) {
+
+      return null;
+    }
+
+
+    const maxDimension =
+      1400;
+
+
+    let scale = 1;
+
+
+    if (
+      Math.max(
+        src.cols,
+        src.rows
+      ) >
+      maxDimension
+    ) {
+
+      scale =
+        maxDimension /
+        Math.max(
+          src.cols,
+          src.rows
+        );
+    }
+
+
+    small =
+      new cv.Mat();
+
+
+    cv.resize(
+      src,
+      small,
+
+      new cv.Size(
+        Math.round(
+          src.cols *
+          scale
+        ),
+
+        Math.round(
+          src.rows *
+          scale
+        )
+      ),
+
+      0,
+      0,
+
+      cv.INTER_AREA
+    );
+
+
+    gray =
+      new cv.Mat();
+
+
+    cv.cvtColor(
+      small,
+      gray,
+      cv.COLOR_RGBA2GRAY
+    );
+
+
+    blurred =
+      new cv.Mat();
+
+
+    cv.GaussianBlur(
+      gray,
+      blurred,
+
+      new cv.Size(
+        5,
+        5
+      ),
+
+      0
+    );
+
+
+    edges =
+      new cv.Mat();
+
+
+    cv.Canny(
+      blurred,
+      edges,
+      60,
+      180
+    );
+
+
+    contours =
+      new cv.MatVector();
+
+
+    hierarchy =
+      new cv.Mat();
+
+
+    cv.findContours(
+      edges,
+      contours,
+      hierarchy,
+
+      cv.RETR_LIST,
+
+      cv.CHAIN_APPROX_SIMPLE
+    );
+
+
+    const imageArea =
+      small.cols *
+      small.rows;
+
+
+    const targetRatio =
+      1.586;
+
+
+    let bestScore =
+      0;
+
+
+    /*
+     * Find best quadrilateral.
+     */
+
+    for (
+      let i = 0;
+      i < contours.size();
+      i++
+    ) {
+
+      const contour =
+        contours.get(i);
+
+
+      const area =
+        cv.contourArea(
+          contour
+        );
+
+
+      if (
+        area <
+        imageArea * 0.04
+      ) {
+
+        contour.delete();
+
+        continue;
+      }
+
+
+      const perimeter =
+        cv.arcLength(
+          contour,
+          true
+        );
+
+
+      const approx =
+        new cv.Mat();
+
+
+      cv.approxPolyDP(
+        contour,
+        approx,
+
+        perimeter *
+        0.025,
+
+        true
+      );
+
+
+      if (
+        approx.rows === 4
+      ) {
+
+        const rect =
+          cv.boundingRect(
+            approx
+          );
+
+
+        const ratio =
+          Math.max(
+            rect.width,
+            rect.height
+          ) /
+          Math.min(
+            rect.width,
+            rect.height
+          );
+
+
+        const difference =
+          Math.abs(
+            ratio -
+            targetRatio
+          );
+
+
+        if (
+          difference <
+          0.50
+        ) {
+
+          const areaRatio =
+            area /
+            imageArea;
+
+
+          const ratioScore =
+            1 -
+            (
+              difference /
               0.50
             );
 
@@ -1012,39 +1729,31 @@ function detectCard(
 
 
     /*
-     * No suitable card.
+     * No edge detection.
+
+     * Return null.
+
+     * The caller will use
+     * the original photo.
      */
 
     if (
       !bestContour
     ) {
 
-      cleanup(
-        src,
-        small,
-        gray,
-        blurred,
-        edges,
-        contours,
-        hierarchy
-      );
-
-
       documentGuide.classList.remove(
         "detected"
       );
 
-
       edgeStatus.textContent =
-        "Manual capture";
-
+        "Captured without edge correction";
 
       return null;
     }
 
 
     /*
-     * Read points.
+     * Get corners.
      */
 
     const points =
@@ -1074,29 +1783,17 @@ function detectCard(
     }
 
 
-    bestContour.delete();
-
-
     if (
       points.length !== 4
     ) {
-
-      cleanup(
-        src,
-        small,
-        gray,
-        blurred,
-        edges,
-        contours,
-        hierarchy
-      );
 
       return null;
     }
 
 
     /*
-     * Convert to original coordinates.
+     * Convert coordinates
+     * back to original image.
      */
 
     const originalPoints =
@@ -1122,7 +1819,7 @@ function detectCard(
 
 
     /*
-     * Width.
+     * Calculate output width.
      */
 
     const widthTop =
@@ -1149,7 +1846,8 @@ function detectCard(
 
 
     /*
-     * Force credit-card ratio.
+     * Force exact credit-card
+     * aspect ratio.
      */
 
     const outputHeight =
@@ -1159,15 +1857,15 @@ function detectCard(
       );
 
 
-    /*
-     * Perspective transformation.
-     */
-
     processingText.textContent =
       "Straightening card...";
 
 
-    const sourcePoints =
+    /*
+     * Source corners.
+     */
+
+    sourcePoints =
       cv.matFromArray(
 
         4,
@@ -1194,7 +1892,11 @@ function detectCard(
       );
 
 
-    const destinationPoints =
+    /*
+     * Destination corners.
+     */
+
+    destinationPoints =
       cv.matFromArray(
 
         4,
@@ -1221,14 +1923,14 @@ function detectCard(
       );
 
 
-    const transform =
+    transform =
       cv.getPerspectiveTransform(
         sourcePoints,
         destinationPoints
       );
 
 
-    const result =
+    result =
       new cv.Mat();
 
 
@@ -1255,19 +1957,20 @@ function detectCard(
 
 
     /*
-     * Display successful detection.
+     * Green indication.
      */
 
     documentGuide.classList.add(
       "detected"
     );
 
+
     edgeStatus.textContent =
-      "✓ Card detected";
+      "✓ Card captured and corrected";
 
 
     /*
-     * Convert back to image.
+     * Convert to JPEG.
      */
 
     cv.imshow(
@@ -1283,6 +1986,20 @@ function detectCard(
       );
 
 
+    return image;
+
+  } catch (error) {
+
+    console.error(
+      "Card processing error:",
+      error
+    );
+
+
+    return null;
+
+  } finally {
+
     cleanup(
       src,
       small,
@@ -1291,33 +2008,12 @@ function detectCard(
       edges,
       contours,
       hierarchy,
+      bestContour,
       sourcePoints,
       destinationPoints,
       transform,
       result
     );
-
-
-    return image;
-
-
-  } catch (error) {
-
-    console.error(
-      "Detection error:",
-      error
-    );
-
-
-    documentGuide.classList.remove(
-      "detected"
-    );
-
-    edgeStatus.textContent =
-      "Manual capture";
-
-
-    return null;
   }
 }
 
@@ -1362,6 +2058,7 @@ function orderPoints(
       const sum =
         point.x +
         point.y;
+
 
       const diff =
         point.x -
@@ -1460,7 +2157,7 @@ function distance(
 
 
 /* =========================================================
-   CLEANUP
+   OPENCV CLEANUP
 ========================================================= */
 
 function cleanup(
@@ -1477,7 +2174,9 @@ function cleanup(
       ) {
 
         try {
+
           object.delete();
+
         } catch (_) {}
 
       }
@@ -1528,11 +2227,14 @@ retakeFrontBtn.addEventListener(
     currentSide =
       "front";
 
+
     updateCameraUI();
+
 
     showScreen(
       cameraScreen
     );
+
 
     await startCamera();
   }
@@ -1550,11 +2252,14 @@ retakeBackBtn.addEventListener(
     currentSide =
       "back";
 
+
     updateCameraUI();
+
 
     showScreen(
       cameraScreen
     );
+
 
     await startCamera();
   }
@@ -1562,7 +2267,7 @@ retakeBackBtn.addEventListener(
 
 
 /* =========================================================
-   ADD PAGE
+   ADD NEXT PAGE
 ========================================================= */
 
 addPageBtn.addEventListener(
@@ -1608,9 +2313,11 @@ addPageBtn.addEventListener(
 
     updateCameraUI();
 
+
     showScreen(
       cameraScreen
     );
+
 
     await startCamera();
   }
@@ -1659,6 +2366,7 @@ finishBtn.addEventListener(
 
 
     renderPages();
+
 
     showScreen(
       documentsScreen
@@ -1730,18 +2438,21 @@ function renderPages() {
         <div class="page-actions">
 
           <button
+            type="button"
             data-action="front"
             data-index="${index}">
             Retake Front
           </button>
 
           <button
+            type="button"
             data-action="back"
             data-index="${index}">
             Retake Back
           </button>
 
           <button
+            type="button"
             data-action="delete"
             data-index="${index}">
             Delete
@@ -1755,6 +2466,7 @@ function renderPages() {
       pagesList.appendChild(
         item
       );
+
     }
   );
 }
@@ -1789,6 +2501,10 @@ pagesList.addEventListener(
       button.dataset.action;
 
 
+    /*
+     * DELETE
+     */
+
     if (
       action ===
       "delete"
@@ -1799,11 +2515,16 @@ pagesList.addEventListener(
         1
       );
 
+
       renderPages();
 
       return;
     }
 
+
+    /*
+     * RETAKE FRONT
+     */
 
     if (
       action ===
@@ -1833,15 +2554,22 @@ pagesList.addEventListener(
 
       updateCameraUI();
 
+
       showScreen(
         cameraScreen
       );
 
+
       await startCamera();
+
 
       return;
     }
 
+
+    /*
+     * RETAKE BACK
+     */
 
     if (
       action ===
@@ -1871,11 +2599,14 @@ pagesList.addEventListener(
 
       updateCameraUI();
 
+
       showScreen(
         cameraScreen
       );
 
+
       await startCamera();
+
     }
 
   }
@@ -1883,7 +2614,7 @@ pagesList.addEventListener(
 
 
 /* =========================================================
-   ANOTHER CARD
+   SCAN ANOTHER CARD
 ========================================================= */
 
 addAnotherBtn.addEventListener(
@@ -1905,9 +2636,11 @@ addAnotherBtn.addEventListener(
 
     updateCameraUI();
 
+
     showScreen(
       cameraScreen
     );
+
 
     await startCamera();
   }
@@ -1915,7 +2648,7 @@ addAnotherBtn.addEventListener(
 
 
 /* =========================================================
-   CLEAR
+   CLEAR ALL
 ========================================================= */
 
 clearAllBtn.addEventListener(
@@ -1966,10 +2699,11 @@ cancelCameraBtn.addEventListener(
 
 
     if (
-      pages.length
+      pages.length > 0
     ) {
 
       renderPages();
+
 
       showScreen(
         documentsScreen
@@ -1988,7 +2722,7 @@ cancelCameraBtn.addEventListener(
 
 
 /* =========================================================
-   PDF
+   DOWNLOAD PDF
 ========================================================= */
 
 downloadPdfBtn.addEventListener(
@@ -1996,6 +2730,10 @@ downloadPdfBtn.addEventListener(
   generatePDF
 );
 
+
+/* =========================================================
+   GENERATE PDF
+========================================================= */
 
 async function generatePDF() {
 
@@ -2023,6 +2761,10 @@ async function generatePDF() {
     } =
       window.jspdf;
 
+
+    /*
+     * A4 portrait.
+     */
 
     const pdf =
       new jsPDF({
@@ -2062,6 +2804,13 @@ async function generatePDF() {
       7;
 
 
+    /*
+     * Two cards per PDF page.
+
+     * Front on top.
+     * Back underneath.
+     */
+
     const availableWidth =
       pageWidth -
       margin * 2;
@@ -2077,7 +2826,7 @@ async function generatePDF() {
 
 
     /*
-     * Credit-card ratio.
+     * Credit card ratio.
      */
 
     const cardWidth =
@@ -2132,6 +2881,10 @@ async function generatePDF() {
        * FRONT
        */
 
+      const frontLabelY =
+        margin + 4;
+
+
       const frontY =
         margin +
         labelHeight;
@@ -2149,7 +2902,7 @@ async function generatePDF() {
 
         margin,
 
-        margin + 4
+        frontLabelY
       );
 
 
@@ -2178,6 +2931,12 @@ async function generatePDF() {
        * BACK
        */
 
+      const backLabelY =
+        pageHeight / 2 +
+        gap / 2 +
+        4;
+
+
       const backY =
         pageHeight / 2 +
         gap / 2 +
@@ -2196,9 +2955,7 @@ async function generatePDF() {
 
         margin,
 
-        pageHeight / 2 +
-        gap / 2 +
-        4
+        backLabelY
       );
 
 
@@ -2225,13 +2982,16 @@ async function generatePDF() {
     }
 
 
+    /*
+     * Download.
+     */
+
     pdf.save(
-      `Card-Scan-${getDate()}.pdf`
+      `ID-Card-Scan-${getDate()}.pdf`
     );
 
 
     hideProcessing();
-
 
   } catch (error) {
 
@@ -2257,23 +3017,23 @@ async function generatePDF() {
 
 function getDate() {
 
-  const d =
+  const date =
     new Date();
 
 
   return [
 
-    d.getFullYear(),
+    date.getFullYear(),
 
     String(
-      d.getMonth() + 1
+      date.getMonth() + 1
     ).padStart(
       2,
       "0"
     ),
 
     String(
-      d.getDate()
+      date.getDate()
     ).padStart(
       2,
       "0"
@@ -2284,7 +3044,7 @@ function getDate() {
 
 
 /* =========================================================
-   PROCESSING
+   PROCESSING MODAL
 ========================================================= */
 
 function showProcessing(
@@ -2293,6 +3053,7 @@ function showProcessing(
 
   processingText.textContent =
     text;
+
 
   processingModal.classList.add(
     "show"
@@ -2306,3 +3067,17 @@ function hideProcessing() {
     "show"
   );
 }
+
+
+/* =========================================================
+   PAGE CLEANUP
+========================================================= */
+
+window.addEventListener(
+  "beforeunload",
+  () => {
+
+    stopCamera();
+
+  }
+);
