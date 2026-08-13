@@ -2,2402 +2,734 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-
-<meta
-    name="viewport"
-    content="width=device-width, initial-scale=1, viewport-fit=cover"
->
-
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0b0d10">
+<meta name="format-detection" content="telephone=no">
 <title>Document Scanner</title>
-
-<script
-    src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">
-</script>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
-* {
-    box-sizing: border-box;
-}
-
-html,
-body {
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    background: #000;
-    font-family: Arial, sans-serif;
-}
-
-button {
-    font-family: inherit;
-    -webkit-tap-highlight-color: transparent;
-}
-
-#app {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    background: #000;
-}
-
-/* =========================================================
-   CAMERA
-========================================================= */
-
-#cameraContainer {
-    position: absolute;
-    inset: 0;
-    overflow: hidden;
-    background: #000;
-}
-
-#video {
-    position: absolute;
-
-    /*
-      Fill the entire screen.
-      No black bars.
-    */
-    left: 0;
-    top: 0;
-
-    width: 100%;
-    height: 100%;
-
-    object-fit: cover;
-
-    background: #000;
-}
-
-/*
-  Small hidden canvas used for capturing.
-*/
-#canvas {
-    display: none;
-}
-
-/* =========================================================
-   OVERLAY
-========================================================= */
-
-#overlay {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-}
-
-/*
-  Credit-card / ID-1 ratio:
-  85.60 / 53.98 = 1.5858
-*/
-
-#guide {
-    position: absolute;
-
-    width: min(88vw, 650px);
-
-    aspect-ratio: 1.586 / 1;
-
-    left: 50%;
-    top: 50%;
-
-    transform: translate(-50%, -50%);
-
-    border: 3px solid rgba(255,255,255,.95);
-
-    border-radius: 12px;
-
-    box-shadow:
-        0 0 0 9999px rgba(0,0,0,.32);
-
-    transition:
-        border-color .2s,
-        box-shadow .2s;
-}
-
-#guide.ready {
-    border-color: #00e676;
-}
-
-#guide.warning {
-    border-color: #ffca28;
-}
-
-/* =========================================================
-   CORNERS
-========================================================= */
-
-.corner {
-    position: absolute;
-
-    width: 35px;
-    height: 35px;
-}
-
-.corner.tl {
-    top: -3px;
-    left: -3px;
-
-    border-top: 5px solid white;
-    border-left: 5px solid white;
-
-    border-radius: 10px 0 0 0;
-}
-
-.corner.tr {
-    top: -3px;
-    right: -3px;
-
-    border-top: 5px solid white;
-    border-right: 5px solid white;
-
-    border-radius: 0 10px 0 0;
-}
-
-.corner.bl {
-    bottom: -3px;
-    left: -3px;
-
-    border-bottom: 5px solid white;
-    border-left: 5px solid white;
-
-    border-radius: 0 0 0 10px;
-}
-
-.corner.br {
-    bottom: -3px;
-    right: -3px;
-
-    border-bottom: 5px solid white;
-    border-right: 5px solid white;
-
-    border-radius: 0 0 10px 0;
-}
-
-/* =========================================================
-   TOP BAR
-========================================================= */
-
-#topBar {
-    position: absolute;
-
-    top: 0;
-    left: 0;
-    right: 0;
-
-    padding:
-        calc(env(safe-area-inset-top) + 14px)
-        16px
-        16px;
-
-    background:
-        linear-gradient(
-            rgba(0,0,0,.78),
-            rgba(0,0,0,0)
-        );
-
-    color: white;
-
-    text-align: center;
-
-    z-index: 20;
-}
-
-#title {
-    font-size: 20px;
-    font-weight: 700;
-}
-
-#instruction {
-    margin-top: 6px;
-
-    font-size: 15px;
-    font-weight: 600;
-}
-
-#pageInfo {
-    margin-top: 5px;
-
-    font-size: 12px;
-
-    opacity: .85;
-}
-
-/* =========================================================
-   STATUS
-========================================================= */
-
-#status {
-    position: absolute;
-
-    top: calc(
-        env(safe-area-inset-top) + 105px
-    );
-
-    left: 50%;
-
-    transform: translateX(-50%);
-
-    z-index: 30;
-
-    padding: 8px 14px;
-
-    border-radius: 20px;
-
-    background: rgba(0,0,0,.68);
-
-    color: white;
-
-    font-size: 13px;
-
-    white-space: nowrap;
-
-    max-width: 90vw;
-
-    overflow: hidden;
-
-    text-overflow: ellipsis;
-}
-
-/* =========================================================
-   BOTTOM CONTROLS
-========================================================= */
-
-#bottom {
-    position: absolute;
-
-    left: 0;
-    right: 0;
-    bottom: 0;
-
-    padding:
-        15px
-        16px
-        calc(env(safe-area-inset-bottom) + 16px);
-
-    background:
-        linear-gradient(
-            rgba(0,0,0,0),
-            rgba(0,0,0,.92)
-        );
-
-    z-index: 30;
-}
-
-/* =========================================================
-   CAPTURE BUTTON
-========================================================= */
-
-#captureButton {
-    position: relative;
-
-    display: block;
-
-    width: 82px;
-    height: 82px;
-
-    margin: 0 auto 15px;
-
-    padding: 0;
-
-    border-radius: 50%;
-
-    border: 6px solid white;
-
-    background: white;
-
-    box-shadow:
-        0 4px 18px rgba(0,0,0,.55);
-
-    cursor: pointer;
-
-    touch-action: manipulation;
-}
-
-#captureButton::after {
-    content: "";
-
-    position: absolute;
-
-    width: 64px;
-    height: 64px;
-
-    left: 50%;
-    top: 50%;
-
-    transform:
-        translate(-50%, -50%);
-
-    border-radius: 50%;
-
-    background: #e53935;
-
-    transition: transform .1s;
-}
-
-#captureButton:active::after {
-    transform:
-        translate(-50%, -50%)
-        scale(.88);
-}
-
-#captureButton:disabled {
-    opacity: .45;
-}
-
-/* =========================================================
-   BUTTONS
-========================================================= */
-
-.buttons {
-    display: flex;
-
-    justify-content: center;
-
-    gap: 10px;
-
-    flex-wrap: wrap;
-}
-
-button {
-    border: none;
-
-    padding: 12px 18px;
-
-    border-radius: 10px;
-
-    font-size: 14px;
-
-    font-weight: 700;
-
-    cursor: pointer;
-
-    touch-action: manipulation;
-}
-
-.secondary {
-    background: rgba(255,255,255,.94);
-
-    color: #111;
-}
-
-.primary {
-    background: #1976d2;
-
-    color: white;
-}
-
-.success {
-    background: #00a86b;
-
-    color: white;
-}
-
-.danger {
-    background: #e53935;
-
-    color: white;
-}
-
-/* =========================================================
-   PAGES PANEL
-========================================================= */
-
-#pagesPanel {
-    position: absolute;
-
-    inset: 0;
-
-    z-index: 100;
-
-    display: none;
-
-    background: #f5f5f5;
-
-    overflow-y: auto;
-
-    -webkit-overflow-scrolling: touch;
-}
-
-#pagesHeader {
-    position: sticky;
-
-    top: 0;
-
-    background: white;
-
-    padding:
-        calc(env(safe-area-inset-top) + 15px)
-        15px
-        15px;
-
-    border-bottom: 1px solid #ddd;
-
-    z-index: 5;
-}
-
-#pagesHeader h2 {
-    margin: 0 0 5px;
-
-    font-size: 22px;
-}
-
-#pagesHeader p {
-    margin: 0;
-
-    color: #666;
-
-    font-size: 14px;
-}
-
-#pages {
-    padding: 15px;
-}
-
-/* =========================================================
-   PAGE CARD
-========================================================= */
-
-.page {
-    background: white;
-
-    border-radius: 12px;
-
-    padding: 12px;
-
-    margin-bottom: 15px;
-
-    box-shadow:
-        0 2px 8px rgba(0,0,0,.12);
-}
-
-.pageTitle {
-    font-weight: 700;
-
-    margin-bottom: 10px;
-}
-
-.photos {
-    display: grid;
-
-    grid-template-columns:
-        1fr 1fr;
-
-    gap: 10px;
-}
-
-.photoBox {
-    min-width: 0;
-}
-
-.photoBox img {
-    display: block;
-
-    width: 100%;
-
-    aspect-ratio: 1.586 / 1;
-
-    object-fit: cover;
-
-    border-radius: 8px;
-
-    background: #ddd;
-}
-
-.photoLabel {
-    margin-top: 5px;
-
-    text-align: center;
-
-    font-size: 12px;
-
-    font-weight: 700;
-
-    color: #555;
-}
-
-.deletePage {
-    width: 100%;
-
-    margin-top: 10px;
-
-    background: #ffebee;
-
-    color: #c62828;
-}
-
-/* =========================================================
-   EMPTY PAGES
-========================================================= */
-
-.empty {
-    text-align: center;
-
-    padding: 50px 20px;
-
-    color: #777;
-}
-
-/* =========================================================
-   MESSAGE
-========================================================= */
-
-#message {
-    position: fixed;
-
-    inset: 0;
-
-    display: none;
-
-    align-items: center;
-
-    justify-content: center;
-
-    padding: 20px;
-
-    background: rgba(0,0,0,.75);
-
-    z-index: 500;
-}
-
-.messageBox {
-    width: min(90%, 420px);
-
-    background: white;
-
-    border-radius: 15px;
-
-    padding: 25px;
-
-    text-align: center;
-
-    box-shadow:
-        0 10px 40px rgba(0,0,0,.35);
-}
-
-.messageBox h3 {
-    margin:
-        0
-        0
-        10px;
-}
-
-.messageBox p {
-    margin: 0;
-
-    color: #555;
-
-    line-height: 1.5;
-}
-
-.messageBox button {
-    width: 100%;
-
-    margin-top: 18px;
-}
-
-/* =========================================================
-   PROCESSING
-========================================================= */
-
-#processing {
-    position: fixed;
-
-    inset: 0;
-
-    display: none;
-
-    align-items: center;
-
-    justify-content: center;
-
-    background: rgba(0,0,0,.88);
-
-    z-index: 1000;
-
-    color: white;
-
-    text-align: center;
-}
-
-.loader {
-    width: 48px;
-    height: 48px;
-
-    margin:
-        0
-        auto
-        16px;
-
-    border:
-        5px solid rgba(255,255,255,.25);
-
-    border-top-color: white;
-
-    border-radius: 50%;
-
-    animation:
-        spin .8s linear infinite;
-}
-
-@keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-/* =========================================================
-   FLASH
-========================================================= */
-
-#flash {
-    position: fixed;
-
-    inset: 0;
-
-    background: white;
-
-    opacity: 0;
-
-    pointer-events: none;
-
-    z-index: 900;
-
-    transition: opacity .15s;
-}
-
-/* =========================================================
-   MOBILE
-========================================================= */
-
-@media (max-width: 600px) {
-
-    #guide {
-        width: 90vw;
-    }
-
-    #captureButton {
-        width: 76px;
-        height: 76px;
-    }
-
-    #captureButton::after {
-        width: 60px;
-        height: 60px;
-    }
-
-    button {
-        padding:
-            11px 14px;
-
-        font-size: 13px;
-    }
-}
-
-/* =========================================================
-   DESKTOP
-========================================================= */
-
-@media (min-width: 800px) {
-
-    #guide {
-        width: 650px;
-    }
-
-    #bottom {
-        padding-bottom: 25px;
-    }
-}
+  :root{
+    --bg:#0b0d10;
+    --panel:#1b1f24;
+    --panel-2:#15181c;
+    --accent:#ff3b30;
+    --accent-dark:#c92a20;
+    --overlay:rgba(0,0,0,0.45);
+    --safe-top:env(safe-area-inset-top,0px);
+    --safe-bottom:env(safe-area-inset-bottom,0px);
+    --safe-left:env(safe-area-inset-left,0px);
+    --safe-right:env(safe-area-inset-right,0px);
+  }
+
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+  html,body{
+    margin:0; padding:0; width:100%; height:100%;
+    background:var(--bg); color:#fff;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    overflow:hidden;
+    overscroll-behavior:none;
+  }
+
+  #app{ position:fixed; inset:0; width:100%; height:100%; }
+
+  .screen{ position:absolute; inset:0; display:none; width:100%; height:100%; }
+  .screen.active{ display:block; }
+
+  /* ---------- CAMERA SCREEN ---------- */
+  #cameraScreen{ overflow:hidden; background:#000; }
+
+  #video{
+    position:absolute; inset:0;
+    width:100%; height:100%;
+    object-fit:cover;
+    background:#000;
+    display:block;
+  }
+  #video.mirrored{ transform:scaleX(-1); }
+
+  #guideMask{
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    pointer-events:none; z-index:3;
+  }
+  #guideBox{
+    position:relative;
+    width:min(88vw, calc(88vh * 1.586));
+    aspect-ratio:1.586 / 1;
+    max-width:640px;
+    border-radius:14px;
+    box-shadow:0 0 0 2000px var(--overlay);
+  }
+  .corner{
+    position:absolute; width:26px; height:26px;
+    border:3px solid #fff;
+  }
+  .corner.tl{ top:-3px; left:-3px; border-right:none; border-bottom:none; border-top-left-radius:8px; }
+  .corner.tr{ top:-3px; right:-3px; border-left:none; border-bottom:none; border-top-right-radius:8px; }
+  .corner.bl{ bottom:-3px; left:-3px; border-right:none; border-top:none; border-bottom-left-radius:8px; }
+  .corner.br{ bottom:-3px; right:-3px; border-left:none; border-top:none; border-bottom-right-radius:8px; }
+
+  #topBar{
+    position:absolute; top:0; left:0; right:0;
+    padding:calc(var(--safe-top) + 16px) 16px 0 16px;
+    text-align:center;
+    pointer-events:none;
+    z-index:5;
+  }
+  #instruction{
+    display:inline-block;
+    font-size:18px; font-weight:700; letter-spacing:0.2px;
+    background:rgba(0,0,0,0.35);
+    padding:8px 18px;
+    border-radius:20px;
+    backdrop-filter:blur(6px);
+  }
+  #detectionStatus{
+    margin-top:10px;
+    display:inline-block;
+    font-size:12.5px;
+    padding:6px 14px;
+    border-radius:16px;
+    background:rgba(0,0,0,0.35);
+    color:rgba(255,255,255,0.85);
+    backdrop-filter:blur(6px);
+    transition:background 0.2s ease, color 0.2s ease;
+  }
+  #detectionStatus.detected{
+    background:rgba(52,199,89,0.28);
+    color:#7CFF9E;
+  }
+
+  #flashOverlay{
+    position:absolute; inset:0; background:#fff; opacity:0;
+    pointer-events:none; z-index:9;
+  }
+  #flashOverlay.flash{ animation:flashAnim 260ms ease-out; }
+  @keyframes flashAnim{ 0%{opacity:0.85;} 100%{opacity:0;} }
+
+  #bottomBar{
+    position:absolute; left:0; right:0; bottom:0;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 calc(var(--safe-right) + 26px) calc(var(--safe-bottom) + 26px) calc(var(--safe-left) + 26px);
+    z-index:5;
+  }
+
+  .iconBtn{
+    width:52px; height:52px; border-radius:50%;
+    background:rgba(255,255,255,0.14);
+    border:1px solid rgba(255,255,255,0.3);
+    color:#fff; font-size:22px;
+    display:flex; align-items:center; justify-content:center;
+    backdrop-filter:blur(6px);
+  }
+  .iconBtn:active{ background:rgba(255,255,255,0.28); }
+
+  .pillBtn{
+    padding:11px 18px; border-radius:22px;
+    background:rgba(255,255,255,0.14);
+    border:1px solid rgba(255,255,255,0.3);
+    color:#fff; font-size:14px; font-weight:600;
+    backdrop-filter:blur(6px);
+    white-space:nowrap;
+  }
+  .pillBtn:active{ background:rgba(255,255,255,0.28); }
+
+  #captureBtn{
+    width:78px; height:78px; border-radius:50%;
+    background:var(--accent);
+    border:5px solid #fff;
+    box-shadow:0 2px 16px rgba(0,0,0,0.5);
+    padding:0;
+    flex-shrink:0;
+  }
+  #captureBtn:active{ background:var(--accent-dark); transform:scale(0.94); }
+
+  button{ cursor:pointer; }
+
+  /* ---------- PAGES SCREEN ---------- */
+  #pagesScreen{
+    background:var(--panel-2);
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    padding:calc(var(--safe-top) + 20px) calc(var(--safe-right) + 18px) calc(var(--safe-bottom) + 18px) calc(var(--safe-left) + 18px);
+  }
+  #pagesHeader{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:18px; gap:10px;
+  }
+  #pagesHeader h1{ font-size:20px; margin:0; }
+  #backToCameraBtn{
+    background:rgba(255,255,255,0.1);
+    border:1px solid rgba(255,255,255,0.25);
+    color:#fff; padding:10px 16px; border-radius:20px; font-size:13px; font-weight:600;
+    white-space:nowrap;
+  }
+  #pagesEmpty{
+    text-align:center; opacity:0.6; font-size:14px; margin-top:60px;
+  }
+  #pagesList{ display:flex; flex-direction:column; gap:14px; }
+  .pageCard{
+    background:var(--panel);
+    border-radius:14px; padding:14px;
+    display:flex; align-items:center; gap:12px;
+  }
+  .pageMeta{ font-size:14px; font-weight:700; width:52px; flex-shrink:0; }
+  .pageThumbs{ display:flex; gap:10px; flex:1; }
+  .thumbWrap{ text-align:center; }
+  .thumbWrap img{
+    width:auto; height:66px; aspect-ratio:1.586/1; object-fit:cover;
+    border-radius:6px; border:1px solid rgba(255,255,255,0.15);
+    display:block;
+  }
+  .thumbLabel{ font-size:10px; opacity:0.6; margin-top:4px; letter-spacing:0.5px; }
+  .deleteBtn{
+    background:rgba(255,59,48,0.15); color:#ff6459;
+    border:1px solid rgba(255,59,48,0.4); border-radius:9px;
+    padding:9px 12px; font-size:12.5px; font-weight:600; flex-shrink:0;
+  }
+  .deleteBtn:active{ background:rgba(255,59,48,0.3); }
+
+  #pagesFooter{
+    position:sticky; bottom:0; padding-top:16px; background:linear-gradient(to top, var(--panel-2) 60%, transparent);
+  }
+  #createPdfBtn{
+    width:100%; padding:16px; border-radius:14px;
+    background:var(--accent); color:#fff; font-weight:700; font-size:16px; border:none;
+  }
+  #createPdfBtn:active{ background:var(--accent-dark); }
+  #createPdfBtn:disabled{ opacity:0.6; }
+
+  /* ---------- PERMISSION / ERROR SCREEN ---------- */
+  #permissionScreen{
+    background:var(--bg);
+    display:flex; align-items:center; justify-content:center;
+    padding:24px;
+  }
+  .permissionBox{ max-width:380px; text-align:center; }
+  .permissionBox .icon{ font-size:44px; margin-bottom:14px; }
+  .permissionBox h2{ margin:0 0 10px 0; font-size:19px; }
+  .permissionBox p{ opacity:0.75; line-height:1.55; margin:0 0 24px 0; font-size:14px; }
+  #retryCamBtn{
+    padding:13px 30px; border-radius:24px;
+    background:var(--accent); border:none; color:#fff; font-weight:700; font-size:15px;
+  }
+  #retryCamBtn:active{ background:var(--accent-dark); }
+
+  /* ---------- TOAST ---------- */
+  #toast{
+    position:fixed; left:50%; bottom:calc(var(--safe-bottom) + 34px);
+    transform:translateX(-50%);
+    background:rgba(25,25,28,0.96);
+    border:1px solid rgba(255,255,255,0.1);
+    padding:13px 18px; border-radius:12px; font-size:14px;
+    z-index:50; max-width:88vw; text-align:center;
+    box-shadow:0 6px 24px rgba(0,0,0,0.4);
+  }
+  .hidden{ display:none !important; }
 </style>
 </head>
-
 <body>
-
 <div id="app">
 
-    <!-- =====================================================
-         CAMERA
-    ====================================================== -->
+  <!-- CAMERA SCREEN -->
+  <div id="cameraScreen" class="screen active">
+    <video id="video" autoplay playsinline muted></video>
+    <canvas id="captureCanvas" class="hidden"></canvas>
+    <div id="flashOverlay"></div>
 
-    <div id="cameraContainer">
-
-        <video
-            id="video"
-            autoplay
-            muted
-            playsinline>
-        </video>
-
-        <div id="overlay">
-
-            <div id="guide">
-
-                <div class="corner tl"></div>
-                <div class="corner tr"></div>
-                <div class="corner bl"></div>
-                <div class="corner br"></div>
-
-            </div>
-
-        </div>
-
-        <div id="topBar">
-
-            <div id="title">
-                Document Scanner
-            </div>
-
-            <div id="instruction">
-                Capture FRONT
-            </div>
-
-            <div id="pageInfo">
-                Page 1 • Front
-            </div>
-
-        </div>
-
-        <div id="status">
-            Position the document inside the frame
-        </div>
-
-        <div id="bottom">
-
-            <!-- REAL MANUAL CAPTURE BUTTON -->
-
-            <button
-                id="captureButton"
-                aria-label="Capture">
-            </button>
-
-            <div class="buttons">
-
-                <button
-                    class="secondary"
-                    id="cameraButton">
-                    🔄 Camera
-                </button>
-
-                <button
-                    class="secondary"
-                    id="pagesButton">
-                    📄 Pages (<span id="pageCount">0</span>)
-                </button>
-
-            </div>
-
-        </div>
-
+    <div id="guideMask">
+      <div id="guideBox">
+        <span class="corner tl"></span>
+        <span class="corner tr"></span>
+        <span class="corner bl"></span>
+        <span class="corner br"></span>
+      </div>
     </div>
 
-
-    <!-- =====================================================
-         PAGES
-    ====================================================== -->
-
-    <div id="pagesPanel">
-
-        <div id="pagesHeader">
-
-            <h2>
-                Scanned Pages
-            </h2>
-
-            <p>
-                Each page contains exactly Front + Back.
-            </p>
-
-            <div
-                class="buttons"
-                style="margin-top:12px">
-
-                <button
-                    class="primary"
-                    id="continueButton">
-                    📷 Continue Scanning
-                </button>
-
-                <button
-                    class="success"
-                    id="pdfButton">
-                    📄 Create PDF
-                </button>
-
-            </div>
-
-        </div>
-
-        <div id="pages"></div>
-
+    <div id="topBar">
+      <div id="instruction">Capture FRONT</div><br>
+      <div id="detectionStatus">Position document inside the frame</div>
     </div>
 
-
-    <!-- =====================================================
-         MESSAGE
-    ====================================================== -->
-
-    <div id="message">
-
-        <div class="messageBox">
-
-            <h3 id="messageTitle">
-                Error
-            </h3>
-
-            <p id="messageText"></p>
-
-            <button
-                class="primary"
-                id="messageOK">
-                OK
-            </button>
-
-        </div>
-
+    <div id="bottomBar">
+      <button id="switchCamBtn" class="iconBtn" aria-label="Switch camera">&#8635;</button>
+      <button id="captureBtn" aria-label="Capture photo"></button>
+      <button id="pagesBtn" class="pillBtn">Pages (0)</button>
     </div>
+  </div>
 
-
-    <!-- =====================================================
-         PROCESSING
-    ====================================================== -->
-
-    <div id="processing">
-
-        <div>
-
-            <div class="loader"></div>
-
-            <div id="processingText">
-                Creating PDF...
-            </div>
-
-        </div>
-
+  <!-- PAGES SCREEN -->
+  <div id="pagesScreen" class="screen">
+    <div id="pagesHeader">
+      <h1>Scanned Pages</h1>
+      <button id="backToCameraBtn">Continue Scanning</button>
     </div>
+    <div id="pagesEmpty">No pages yet. Go back and scan a document.</div>
+    <div id="pagesList"></div>
+    <div id="pagesFooter">
+      <button id="createPdfBtn">Create PDF</button>
+    </div>
+  </div>
 
+  <!-- PERMISSION / CAMERA ERROR SCREEN -->
+  <div id="permissionScreen" class="screen">
+    <div class="permissionBox">
+      <div class="icon">&#128247;</div>
+      <h2 id="permTitle">Camera access needed</h2>
+      <p id="permMessage">This app needs access to your camera to scan documents.</p>
+      <button id="retryCamBtn">Retry</button>
+    </div>
+  </div>
 
-    <div id="flash"></div>
-
+  <div id="toast" class="hidden"></div>
 </div>
 
-
-<canvas id="canvas"></canvas>
-
-
 <script>
+(function(){
+  "use strict";
 
-/* =========================================================
-   ELEMENTS
-========================================================= */
+  // ---------------- STATE ----------------
+  var currentStream = null;
+  var facingMode = "environment";
+  var pendingFront = null;   // dataURL waiting for its BACK
+  var pages = [];            // { front: dataURL, back: dataURL }
+  var detectionInterval = null;
+  var detectionCanvas = null;
+  var detectionCtx = null;
+  var toastTimer = null;
 
-const video =
-    document.getElementById("video");
+  // ---------------- ELEMENT REFS ----------------
+  function $(id){ return document.getElementById(id); }
 
-const canvas =
-    document.getElementById("canvas");
+  // ---------------- SCREEN MANAGEMENT ----------------
+  function showScreen(id){
+    var screens = document.querySelectorAll(".screen");
+    for (var i = 0; i < screens.length; i++){
+      screens[i].classList.remove("active");
+    }
+    $(id).classList.add("active");
+  }
 
-const guide =
-    document.getElementById("guide");
+  // ---------------- TOAST ----------------
+  function showToast(msg){
+    var el = $("toast");
+    el.textContent = msg;
+    el.classList.remove("hidden");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ el.classList.add("hidden"); }, 3400);
+  }
 
-const instruction =
-    document.getElementById("instruction");
+  // ---------------- CAMERA ----------------
+  function stopCamera(){
+    if (currentStream){
+      var tracks = currentStream.getTracks();
+      for (var i = 0; i < tracks.length; i++){ tracks[i].stop(); }
+      currentStream = null;
+    }
+    stopDetectionLoop();
+  }
 
-const pageInfo =
-    document.getElementById("pageInfo");
+  function startCamera(mode){
+    stopCamera();
 
-const statusText =
-    document.getElementById("status");
-
-const captureButton =
-    document.getElementById("captureButton");
-
-const cameraButton =
-    document.getElementById("cameraButton");
-
-const pagesButton =
-    document.getElementById("pagesButton");
-
-const continueButton =
-    document.getElementById("continueButton");
-
-const pdfButton =
-    document.getElementById("pdfButton");
-
-const pageCount =
-    document.getElementById("pageCount");
-
-const pagesPanel =
-    document.getElementById("pagesPanel");
-
-const pagesContainer =
-    document.getElementById("pages");
-
-const message =
-    document.getElementById("message");
-
-const messageTitle =
-    document.getElementById("messageTitle");
-
-const messageText =
-    document.getElementById("messageText");
-
-const messageOK =
-    document.getElementById("messageOK");
-
-const processing =
-    document.getElementById("processing");
-
-const processingText =
-    document.getElementById("processingText");
-
-const flash =
-    document.getElementById("flash");
-
-
-/* =========================================================
-   STATE
-========================================================= */
-
-let stream = null;
-
-let facingMode = "environment";
-
-let currentSide = "front";
-
-let currentFront = null;
-
-let pagesData = [];
-
-let cameraStarting = false;
-
-
-/* =========================================================
-   CAMERA
-========================================================= */
-
-async function startCamera() {
-
-    if (cameraStarting) {
-        return;
+    if (!window.isSecureContext && location.hostname !== "localhost" && location.hostname !== "127.0.0.1"){
+      handleCameraError({ name: "InsecureContextError" });
+      return;
+    }
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+      handleCameraError({ name: "NotSupportedError" });
+      return;
     }
 
-    cameraStarting = true;
-
-    captureButton.disabled = true;
-
-    try {
-
-        /*
-          Stop old camera.
-        */
-
-        if (stream) {
-
-            stream
-                .getTracks()
-                .forEach(
-                    track => track.stop()
-                );
-
-            stream = null;
-        }
-
-
-        /*
-          Check browser support.
-        */
-
-        if (
-            !navigator.mediaDevices ||
-            !navigator.mediaDevices.getUserMedia
-        ) {
-
-            throw new Error(
-                "Camera API is not supported."
-            );
-        }
-
-
-        /*
-          IMPORTANT:
-          We do NOT force 16:9.
-
-          The browser chooses the best
-          available camera resolution.
-        */
-
-        const constraints = {
-
-            audio: false,
-
-            video: {
-
-                facingMode: {
-                    ideal: facingMode
-                },
-
-                width: {
-                    ideal: 2560
-                },
-
-                height: {
-                    ideal: 1440
-                }
-            }
-        };
-
-
-        stream =
-            await navigator
-                .mediaDevices
-                .getUserMedia(
-                    constraints
-                );
-
-
-        video.srcObject =
-            stream;
-
-
-        await new Promise(
-            resolve => {
-
-                if (
-                    video.readyState >= 2
-                ) {
-
-                    resolve();
-
-                } else {
-
-                    video.onloadedmetadata =
-                        () => resolve();
-
-                }
-
-            }
-        );
-
-
-        await video.play();
-
-
-        statusText.textContent =
-            "Position document inside the frame";
-
-
-        guide.classList.remove(
-            "warning"
-        );
-
-        guide.classList.add(
-            "ready"
-        );
-
-
-        captureButton.disabled =
-            false;
-
-
-    } catch (error) {
-
-        console.error(
-            "CAMERA ERROR:",
-            error
-        );
-
-
-        guide.classList.remove(
-            "ready"
-        );
-
-
-        guide.classList.add(
-            "warning"
-        );
-
-
-        let text =
-            "Could not open the camera.";
-
-
-        if (
-            error.name ===
-            "NotAllowedError"
-        ) {
-
-            text =
-                "Camera permission was denied. Please allow camera access in your browser settings.";
-
-        } else if (
-            error.name ===
-            "NotFoundError"
-        ) {
-
-            text =
-                "No camera was found on this device.";
-
-        } else if (
-            error.name ===
-            "NotReadableError"
-        ) {
-
-            text =
-                "The camera is already being used by another application.";
-
-        } else if (
-            location.protocol !==
-            "https:" &&
-            location.hostname !==
-            "localhost"
-        ) {
-
-            text =
-                "Camera access normally requires HTTPS. Open this website using an HTTPS address.";
-
-        }
-
-
-        showMessage(
-            "Camera Error",
-            text
-        );
-
-
-    } finally {
-
-        cameraStarting =
-            false;
-
-    }
-
-}
-
-
-/* =========================================================
-   SWITCH CAMERA
-========================================================= */
-
-async function switchCamera() {
-
-    facingMode =
-        facingMode === "environment"
-            ? "user"
-            : "environment";
-
-
-    await startCamera();
-
-}
-
-
-/* =========================================================
-   UPDATE INSTRUCTION
-========================================================= */
-
-function updateInstruction() {
-
-    const pageNumber =
-        pagesData.length + 1;
-
-
-    if (
-        currentSide ===
-        "front"
-    ) {
-
-        instruction.textContent =
-            "Capture FRONT";
-
-        pageInfo.textContent =
-            `Page ${pageNumber} • Front`;
-
-        statusText.textContent =
-            "Position FRONT inside the frame";
-
-    } else {
-
-        instruction.textContent =
-            "Capture BACK";
-
-        pageInfo.textContent =
-            `Page ${pageNumber} • Back`;
-
-        statusText.textContent =
-            "Position BACK inside the frame";
-
-    }
-
-}
-
-
-/* =========================================================
-   GET GUIDE RECTANGLE
-========================================================= */
-
-function getGuideRect() {
-
-    const rect =
-        guide.getBoundingClientRect();
-
-    return {
-
-        left: rect.left,
-
-        top: rect.top,
-
-        width: rect.width,
-
-        height: rect.height
-
+    var constraints = {
+      audio: false,
+      video: {
+        facingMode: { ideal: mode },
+        width: { ideal: 4096 },
+        height: { ideal: 2160 }
+      }
     };
 
-}
+    navigator.mediaDevices.getUserMedia(constraints).then(function(stream){
+      onStreamReady(stream, mode);
+    }).catch(function(err){
+      if (err && err.name === "OverconstrainedError"){
+        // Retry once with relaxed constraints before giving up
+        navigator.mediaDevices.getUserMedia({ audio:false, video: { facingMode: mode } })
+          .then(function(stream){ onStreamReady(stream, mode); })
+          .catch(function(err2){ handleCameraError(err2); });
+      } else {
+        handleCameraError(err);
+      }
+    });
+  }
 
+  function onStreamReady(stream, mode){
+    currentStream = stream;
+    facingMode = mode;
+    var video = $("video");
+    video.srcObject = stream;
+    video.classList.toggle("mirrored", mode === "user");
 
-/* =========================================================
-   CAPTURE
-========================================================= */
-
-captureButton.addEventListener(
-    "click",
-    capturePhoto
-);
-
-
-async function capturePhoto() {
-
-    if (
-        !video.videoWidth ||
-        !video.videoHeight
-    ) {
-
-        showMessage(
-            "Camera Not Ready",
-            "Please wait for the camera to start."
-        );
-
-        return;
-
+    var started = false;
+    function tryPlay(){
+      if (started) return;
+      started = true;
+      video.play().then(function(){
+        showScreen("cameraScreen");
+        startDetectionLoop();
+      }).catch(function(){
+        // Autoplay might be blocked momentarily; a user tap on capture will still work
+        showScreen("cameraScreen");
+        startDetectionLoop();
+      });
     }
 
+    if (video.readyState >= 1){
+      tryPlay();
+    } else {
+      video.onloadedmetadata = tryPlay;
+    }
+  }
 
-    if (
-        captureButton.disabled
-    ) {
+  function handleCameraError(err){
+    console.error("Camera error:", err);
+    var name = err && err.name;
+    var title = "Camera error";
+    var msg = "Something went wrong while starting the camera. Tap Retry to try again.";
 
-        return;
-
+    if (name === "InsecureContextError"){
+      title = "Secure connection required";
+      msg = "Camera access requires HTTPS or localhost. Please open this page over a secure connection.";
+    } else if (name === "NotSupportedError"){
+      title = "Camera not supported";
+      msg = "Your browser does not support camera access (getUserMedia is unavailable).";
+    } else if (name === "NotAllowedError" || name === "PermissionDeniedError" || name === "SecurityError"){
+      title = "Camera permission denied";
+      msg = "Please allow camera access for this site in your browser settings, then tap Retry.";
+    } else if (name === "NotFoundError" || name === "DevicesNotFoundError"){
+      title = "No camera found";
+      msg = "No camera device could be found on this device.";
+    } else if (name === "NotReadableError" || name === "TrackStartError"){
+      title = "Camera already in use";
+      msg = "The camera may be in use by another app or browser tab. Close it and tap Retry.";
     }
 
+    $("permTitle").textContent = title;
+    $("permMessage").textContent = msg;
+    showScreen("permissionScreen");
+  }
 
-    captureButton.disabled =
-        true;
+  function switchCamera(){
+    var next = facingMode === "environment" ? "user" : "environment";
+    startCamera(next);
+  }
 
+  // ---------------- DOCUMENT DETECTION (status only, never blocks capture) ----------------
+  function startDetectionLoop(){
+    stopDetectionLoop();
+    if (!detectionCanvas){
+      detectionCanvas = document.createElement("canvas");
+      detectionCanvas.width = 64;
+      detectionCanvas.height = 40;
+      detectionCtx = detectionCanvas.getContext("2d", { willReadFrequently: true });
+    }
+    detectionInterval = setInterval(runDetectionSample, 450);
+  }
 
-    try {
+  function stopDetectionLoop(){
+    if (detectionInterval){
+      clearInterval(detectionInterval);
+      detectionInterval = null;
+    }
+  }
 
-        /*
-          We capture the actual
-          camera resolution.
-        */
+  function runDetectionSample(){
+    try{
+      var video = $("video");
+      if (!video.videoWidth || !video.videoHeight) return;
 
-        const sourceWidth =
-            video.videoWidth;
+      var region = computeGuideRegionInVideo();
+      if (!region) return;
 
-        const sourceHeight =
-            video.videoHeight;
+      detectionCtx.drawImage(video, region.srcX, region.srcY, region.srcW, region.srcH, 0, 0, 64, 40);
+      var data = detectionCtx.getImageData(0, 0, 64, 40).data;
 
-
-        /*
-          Camera/video is displayed with
-          object-fit: cover.
-
-          Therefore we calculate exactly
-          which part of the camera frame
-          is visible on the screen.
-        */
-
-        const videoRect =
-            video.getBoundingClientRect();
-
-
-        const scale =
-            Math.max(
-
-                videoRect.width /
-                    sourceWidth,
-
-                videoRect.height /
-                    sourceHeight
-
-            );
-
-
-        const displayedWidth =
-            sourceWidth * scale;
-
-        const displayedHeight =
-            sourceHeight * scale;
-
-
-        const videoOffsetX =
-            (
-                displayedWidth -
-                videoRect.width
-            ) / 2;
-
-
-        const videoOffsetY =
-            (
-                displayedHeight -
-                videoRect.height
-            ) / 2;
-
-
-        const guideRect =
-            getGuideRect();
-
-
-        /*
-          Guide coordinates relative
-          to video element.
-        */
-
-        const guideX =
-            guideRect.left -
-            videoRect.left;
-
-        const guideY =
-            guideRect.top -
-            videoRect.top;
-
-
-        /*
-          Convert screen pixels back
-          to actual camera pixels.
-        */
-
-        let sx =
-            (
-                guideX +
-                videoOffsetX
-            ) / scale;
-
-
-        let sy =
-            (
-                guideY +
-                videoOffsetY
-            ) / scale;
-
-
-        let sw =
-            guideRect.width /
-            scale;
-
-
-        let sh =
-            guideRect.height /
-            scale;
-
-
-        /*
-          Keep crop inside source.
-        */
-
-        sx =
-            Math.max(
-                0,
-                Math.min(
-                    sx,
-                    sourceWidth - 1
-                )
-            );
-
-        sy =
-            Math.max(
-                0,
-                Math.min(
-                    sy,
-                    sourceHeight - 1
-                )
-            );
-
-        sw =
-            Math.min(
-                sw,
-                sourceWidth - sx
-            );
-
-        sh =
-            Math.min(
-                sh,
-                sourceHeight - sy
-            );
-
-
-        /*
-          High quality output.
-
-          Keep the camera crop ratio.
-        */
-
-        const outputWidth =
-            1712;
-
-        const outputHeight =
-            Math.round(
-                outputWidth *
-                sh /
-                sw
-            );
-
-
-        canvas.width =
-            outputWidth;
-
-        canvas.height =
-            outputHeight;
-
-
-        const ctx =
-            canvas.getContext(
-                "2d",
-                {
-                    alpha: false
-                }
-            );
-
-
-        /*
-          Reset transform.
-        */
-
-        ctx.setTransform(
-            1,
-            0,
-            0,
-            1,
-            0,
-            0
-        );
-
-
-        /*
-          Mirror front camera only.
-        */
-
-        if (
-            facingMode ===
-            "user"
-        ) {
-
-            ctx.translate(
-                outputWidth,
-                0
-            );
-
-            ctx.scale(
-                -1,
-                1
-            );
-
+      var energy = 0;
+      for (var y = 1; y < 39; y++){
+        for (var x = 1; x < 63; x++){
+          var i = (y * 64 + x) * 4;
+          var iR = (y * 64 + x + 1) * 4;
+          var iD = ((y + 1) * 64 + x) * 4;
+          var lum = 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2];
+          var lumR = 0.299 * data[iR] + 0.587 * data[iR+1] + 0.114 * data[iR+2];
+          var lumD = 0.299 * data[iD] + 0.587 * data[iD+1] + 0.114 * data[iD+2];
+          energy += Math.abs(lum - lumR) + Math.abs(lum - lumD);
         }
+      }
+      var avgEnergy = energy / (62 * 38);
+      var statusEl = $("detectionStatus");
+      if (avgEnergy > 7){
+        statusEl.textContent = "Document detected — ready to capture";
+        statusEl.classList.add("detected");
+      } else {
+        statusEl.textContent = "Position document inside the frame";
+        statusEl.classList.remove("detected");
+      }
+    } catch(e){
+      // Detection is best-effort only; never let it interfere with capture
+    }
+  }
 
+  // ---------------- GEOMETRY: map the on-screen guide box to native video pixels ----------------
+  // The <video> uses object-fit:cover, so it is uniformly scaled to fill the
+  // viewport and the excess is cropped equally from the edges. This computes
+  // the guide rectangle's location in the video's native pixel space.
+  function computeGuideRegionInVideo(){
+    var video = $("video");
+    var vw = video.videoWidth, vh = video.videoHeight;
+    if (!vw || !vh) return null;
 
-        /*
-          Draw only what is inside
-          the document guide.
-        */
+    var guideRect = $("guideBox").getBoundingClientRect();
+    var videoRect = video.getBoundingClientRect();
 
-        ctx.drawImage(
+    var dispW = videoRect.width, dispH = videoRect.height;
+    if (!dispW || !dispH) return null;
 
-            video,
+    var scale = Math.max(dispW / vw, dispH / vh);
+    var renderedW = vw * scale, renderedH = vh * scale;
+    var offsetX = (renderedW - dispW) / 2;
+    var offsetY = (renderedH - dispH) / 2;
 
-            sx,
-            sy,
-            sw,
-            sh,
+    var relLeft = guideRect.left - videoRect.left;
+    var relTop = guideRect.top - videoRect.top;
 
-            0,
-            0,
-            outputWidth,
-            outputHeight
+    var srcX = (relLeft + offsetX) / scale;
+    var srcY = (relTop + offsetY) / scale;
+    var srcW = guideRect.width / scale;
+    var srcH = guideRect.height / scale;
 
-        );
+    // Clamp to valid bounds
+    srcX = Math.max(0, Math.min(srcX, vw - 2));
+    srcY = Math.max(0, Math.min(srcY, vh - 2));
+    srcW = Math.max(2, Math.min(srcW, vw - srcX));
+    srcH = Math.max(2, Math.min(srcH, vh - srcY));
 
+    return { srcX: srcX, srcY: srcY, srcW: srcW, srcH: srcH };
+  }
 
-        /*
-          JPEG.
-        */
+  // ---------------- CAPTURE ----------------
+  function triggerFlash(){
+    var el = $("flashOverlay");
+    el.classList.remove("flash");
+    void el.offsetWidth; // restart animation
+    el.classList.add("flash");
+  }
 
-        const image =
-            canvas.toDataURL(
-                "image/jpeg",
-                0.94
-            );
+  function setInstruction(text){
+    $("instruction").textContent = text;
+  }
 
+  function updatePagesButton(){
+    $("pagesBtn").textContent = "Pages (" + pages.length + ")";
+  }
 
-        /*
-          FRONT
-        */
-
-        if (
-            currentSide ===
-            "front"
-        ) {
-
-            currentFront =
-                image;
-
-            currentSide =
-                "back";
-
-
-            updateInstruction();
-
-            flashScreen();
-
-
-            statusText.textContent =
-                "Front captured. Now capture BACK.";
-
-
-        }
-
-        /*
-          BACK
-        */
-
-        else {
-
-            if (!currentFront) {
-
-                throw new Error(
-                    "Front image is missing."
-                );
-
-            }
-
-
-            pagesData.push({
-
-                front:
-                    currentFront,
-
-                back:
-                    image
-
-            });
-
-
-            currentFront =
-                null;
-
-            currentSide =
-                "front";
-
-
-            updatePageCount();
-
-            renderPages();
-
-            updateInstruction();
-
-            flashScreen();
-
-
-            statusText.textContent =
-                "Page completed. Capture FRONT for the next page.";
-
-        }
-
-
-    } catch (error) {
-
-        console.error(
-            "CAPTURE ERROR:",
-            error
-        );
-
-
-        showMessage(
-            "Capture Failed",
-            "The image could not be captured. Please try again."
-        );
-
-
-    } finally {
-
-        captureButton.disabled =
-            false;
-
+  function captureFrame(){
+    var video = $("video");
+    if (!video || video.readyState < 2 || !video.videoWidth){
+      showToast("Camera is still starting up — try again in a moment.");
+      return;
     }
 
-}
-
-
-/* =========================================================
-   FLASH
-========================================================= */
-
-function flashScreen() {
-
-    flash.style.opacity =
-        "0.85";
-
-
-    setTimeout(
-        () => {
-
-            flash.style.opacity =
-                "0";
-
-        },
-        70
-    );
-
-}
-
-
-/* =========================================================
-   PAGE COUNT
-========================================================= */
-
-function updatePageCount() {
-
-    pageCount.textContent =
-        pagesData.length;
-
-}
-
-
-/* =========================================================
-   RENDER PAGES
-========================================================= */
-
-function renderPages() {
-
-    pagesContainer.innerHTML =
-        "";
-
-
-    if (
-        pagesData.length === 0
-    ) {
-
-        pagesContainer.innerHTML = `
-
-            <div class="empty">
-
-                <div style="font-size:40px">
-                    📄
-                </div>
-
-                <div style="
-                    margin-top:10px;
-                    font-weight:bold;
-                ">
-                    No pages scanned yet
-                </div>
-
-                <div style="
-                    margin-top:6px;
-                ">
-                    Capture Front and Back
-                    to create your first page.
-                </div>
-
-            </div>
-
-        `;
-
-        return;
-
+    var region = computeGuideRegionInVideo();
+    if (!region){
+      showToast("Could not read the camera frame. Please try again.");
+      return;
     }
 
+    var canvas = $("captureCanvas");
+    var outW = Math.round(region.srcW);
+    var outH = Math.round(region.srcH);
+    canvas.width = outW;
+    canvas.height = outH;
 
-    pagesData.forEach(
-        (page, index) => {
-
-            const element =
-                document.createElement(
-                    "div"
-                );
-
-
-            element.className =
-                "page";
-
-
-            element.innerHTML = `
-
-                <div class="pageTitle">
-                    Page ${index + 1}
-                </div>
-
-                <div class="photos">
-
-                    <div class="photoBox">
-
-                        <img
-                            src="${page.front}"
-                            alt="Front">
-
-                        <div class="photoLabel">
-                            FRONT
-                        </div>
-
-                    </div>
-
-                    <div class="photoBox">
-
-                        <img
-                            src="${page.back}"
-                            alt="Back">
-
-                        <div class="photoLabel">
-                            BACK
-                        </div>
-
-                    </div>
-
-                </div>
-
-                <button
-                    class="deletePage"
-                    data-index="${index}">
-
-                    🗑 Delete Page
-
-                </button>
-
-            `;
-
-
-            const deleteButton =
-                element.querySelector(
-                    ".deletePage"
-                );
-
-
-            deleteButton.addEventListener(
-                "click",
-                () => deletePage(index)
-            );
-
-
-            pagesContainer.appendChild(
-                element
-            );
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   DELETE PAGE
-========================================================= */
-
-function deletePage(index) {
-
-    if (
-        !confirm(
-            `Delete Page ${index + 1}?`
-        )
-    ) {
-
-        return;
-
+    var ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, outW, outH);
+    // Note: we always draw directly from the raw (un-mirrored) video frame.
+    // The <video> element is CSS-mirrored for a natural front-camera preview,
+    // but that transform never affects drawImage(), so the captured image is
+    // automatically correctly oriented (not mirrored) for both cameras.
+    try{
+      ctx.drawImage(video, region.srcX, region.srcY, region.srcW, region.srcH, 0, 0, outW, outH);
+    } catch(e){
+      showToast("Capture failed. Please try again.");
+      return;
     }
 
+    var dataURL = canvas.toDataURL("image/jpeg", 0.95);
+    triggerFlash();
+    handleCapturedImage(dataURL);
+  }
 
-    pagesData.splice(
-        index,
-        1
-    );
+  function handleCapturedImage(dataURL){
+    if (pendingFront === null){
+      pendingFront = dataURL;
+      setInstruction("Capture BACK");
+    } else {
+      pages.push({ front: pendingFront, back: dataURL });
+      pendingFront = null;
+      setInstruction("Capture FRONT");
+      updatePagesButton();
+    }
+  }
 
+  // ---------------- PAGES SCREEN ----------------
+  function renderPages(){
+    var list = $("pagesList");
+    var empty = $("pagesEmpty");
+    list.innerHTML = "";
 
-    updatePageCount();
-
-    renderPages();
-
-    updateInstruction();
-
-}
-
-
-/* =========================================================
-   OPEN PAGES
-========================================================= */
-
-function openPages() {
-
-    pagesPanel.style.display =
-        "block";
-
-
-    renderPages();
-
-}
-
-
-/* =========================================================
-   CONTINUE SCANNING
-========================================================= */
-
-function continueScanning() {
-
-    pagesPanel.style.display =
-        "none";
-
-
-    updateInstruction();
-
-
-    /*
-      Make sure camera is running.
-    */
-
-    if (
-        !stream ||
-        stream.getVideoTracks()
-            .some(
-                track =>
-                    track.readyState ===
-                    "live"
-            )
-    ) {
-
-        startCamera();
-
+    if (pages.length === 0){
+      empty.classList.remove("hidden");
+    } else {
+      empty.classList.add("hidden");
     }
 
-}
-
-
-/* =========================================================
-   CREATE PDF
-========================================================= */
-
-async function createPDF() {
-
-    /*
-      No pages.
-    */
-
-    if (
-        pagesData.length === 0
-    ) {
-
-        showMessage(
-            "No Pages",
-            "Please scan at least one complete page."
-        );
-
-        return;
-
-    }
-
-
-    /*
-      Incomplete front.
-    */
-
-    if (
-        currentFront
-    ) {
-
-        showMessage(
-            "Incomplete Page",
-            "The current page has a FRONT image but no BACK image. Capture the BACK before creating the PDF."
-        );
-
-        return;
-
-    }
-
-
-    processing.style.display =
-        "flex";
-
-
-    pdfButton.disabled =
-        true;
-
-
-    try {
-
-        if (
-            !window.jspdf ||
-            !window.jspdf.jsPDF
-        ) {
-
-            throw new Error(
-                "jsPDF library was not loaded."
-            );
-
-        }
-
-
-        const {
-            jsPDF
-        } =
-            window.jspdf;
-
-
-        /*
-          A4 landscape.
-
-          Each PDF page contains:
-
-          LEFT  = FRONT
-          RIGHT = BACK
-        */
-
-        const pdf =
-            new jsPDF({
-
-                orientation:
-                    "landscape",
-
-                unit:
-                    "mm",
-
-                format:
-                    "a4",
-
-                compress:
-                    true
-
-            });
-
-
-        const pdfWidth =
-            297;
-
-        const pdfHeight =
-            210;
-
-
-        const margin =
-            12;
-
-        const gap =
-            8;
-
-
-        const availableWidth =
-            pdfWidth -
-            margin * 2 -
-            gap;
-
-
-        const imageWidth =
-            availableWidth / 2;
-
-
-        const imageHeight =
-            imageWidth / 1.586;
-
-
-        const y =
-            (
-                pdfHeight -
-                imageHeight
-            ) / 2;
-
-
-        for (
-            let i = 0;
-            i < pagesData.length;
-            i++
-        ) {
-
-            if (
-                i > 0
-            ) {
-
-                pdf.addPage();
-
-            }
-
-
-            processingText.textContent =
-                `Creating PDF page ${i + 1} of ${pagesData.length}...`;
-
-
-            /*
-              FRONT
-            */
-
-            pdf.addImage(
-
-                pagesData[i].front,
-
-                "JPEG",
-
-                margin,
-
-                y,
-
-                imageWidth,
-
-                imageHeight,
-
-                "front-" + i,
-
-                "MEDIUM"
-
-            );
-
-
-            /*
-              BACK
-            */
-
-            pdf.addImage(
-
-                pagesData[i].back,
-
-                "JPEG",
-
-                margin +
-                    imageWidth +
-                    gap,
-
-                y,
-
-                imageWidth,
-
-                imageHeight,
-
-                "back-" + i,
-
-                "MEDIUM"
-
-            );
-
-
-            /*
-              Small labels.
-            */
-
-            pdf.setFont(
-                "helvetica",
-                "bold"
-            );
-
-            pdf.setFontSize(
-                8
-            );
-
-
-            pdf.text(
-                "FRONT",
-                margin,
-                y - 3
-            );
-
-
-            pdf.text(
-                "BACK",
-                margin +
-                    imageWidth +
-                    gap,
-                y - 3
-            );
-
-        }
-
-
-        processingText.textContent =
-            "Preparing download...";
-
-
-        /*
-          Create Blob.
-
-          This is more reliable than
-          relying only on pdf.save().
-        */
-
-        const blob =
-            pdf.output(
-                "blob"
-            );
-
-
-        if (
-            !blob ||
-            blob.size === 0
-        ) {
-
-            throw new Error(
-                "PDF blob is empty."
-            );
-
-        }
-
-
-        const filename =
-            "scanned-document-" +
-            getDateString() +
-            ".pdf";
-
-
-        /*
-          Download.
-        */
-
-        downloadBlob(
-            blob,
-            filename
-        );
-
-
-        processing.style.display =
-            "none";
-
-
-    } catch (error) {
-
-        console.error(
-            "PDF ERROR:",
-            error
-        );
-
-
-        processing.style.display =
-            "none";
-
-
-        showMessage(
-            "PDF Creation Failed",
-            "The PDF could not be created. Please try again. If the problem continues, reduce the number of scanned pages."
-        );
-
-
-    } finally {
-
-        pdfButton.disabled =
-            false;
-
-    }
-
-}
-
-
-/* =========================================================
-   DATE
-========================================================= */
-
-function getDateString() {
-
-    const now =
-        new Date();
-
-
-    const year =
-        now.getFullYear();
-
-
-    const month =
-        String(
-            now.getMonth() + 1
-        ).padStart(
-            2,
-            "0"
-        );
-
-
-    const day =
-        String(
-            now.getDate()
-        ).padStart(
-            2,
-            "0"
-        );
-
-
-    return (
-        year +
-        "-" +
-        month +
-        "-" +
-        day
-    );
-
-}
-
-
-/* =========================================================
-   DOWNLOAD BLOB
-========================================================= */
-
-function downloadBlob(
-    blob,
-    filename
-) {
-
-    const url =
-        URL.createObjectURL(
-            blob
-        );
-
-
-    const link =
-        document.createElement(
-            "a"
-        );
-
-
-    link.href =
-        url;
-
-    link.download =
-        filename;
-
-    link.style.display =
-        "none";
-
-
-    document.body.appendChild(
-        link
-    );
-
-
-    link.click();
-
-
-    setTimeout(
-        () => {
-
-            link.remove();
-
-            URL.revokeObjectURL(
-                url
-            );
-
-        },
-        1000
-    );
-
-}
-
-
-/* =========================================================
-   MESSAGE
-========================================================= */
-
-function showMessage(
-    title,
-    text
-) {
-
-    messageTitle.textContent =
-        title;
-
-    messageText.textContent =
-        text;
-
-    message.style.display =
-        "flex";
-
-}
-
-
-function closeMessage() {
-
-    message.style.display =
-        "none";
-
-}
-
-
-messageOK.addEventListener(
-    "click",
-    closeMessage
-);
-
-
-/* =========================================================
-   BUTTON EVENTS
-========================================================= */
-
-cameraButton.addEventListener(
-    "click",
-    switchCamera
-);
-
-
-pagesButton.addEventListener(
-    "click",
-    openPages
-);
-
-
-continueButton.addEventListener(
-    "click",
-    continueScanning
-);
-
-
-pdfButton.addEventListener(
-    "click",
-    createPDF
-);
-
-
-/* =========================================================
-   START
-========================================================= */
-
-window.addEventListener(
-    "load",
-    async () => {
-
-        updateInstruction();
-
-        updatePageCount();
-
+    pages.forEach(function(page, idx){
+      var card = document.createElement("div");
+      card.className = "pageCard";
+
+      var meta = document.createElement("div");
+      meta.className = "pageMeta";
+      meta.textContent = "#" + (idx + 1);
+
+      var thumbs = document.createElement("div");
+      thumbs.className = "pageThumbs";
+      thumbs.appendChild(makeThumb(page.front, "FRONT", idx));
+      thumbs.appendChild(makeThumb(page.back, "BACK", idx));
+
+      var delBtn = document.createElement("button");
+      delBtn.className = "deleteBtn";
+      delBtn.textContent = "Delete";
+      delBtn.addEventListener("click", function(){
+        pages.splice(idx, 1);
         renderPages();
+        updatePagesButton();
+      });
 
-        await startCamera();
+      card.appendChild(meta);
+      card.appendChild(thumbs);
+      card.appendChild(delBtn);
+      list.appendChild(card);
+    });
+  }
 
+  function makeThumb(src, label, idx){
+    var wrap = document.createElement("div");
+    wrap.className = "thumbWrap";
+    var img = document.createElement("img");
+    img.src = src;
+    img.alt = label + " of page " + (idx + 1);
+    var lbl = document.createElement("div");
+    lbl.className = "thumbLabel";
+    lbl.textContent = label;
+    wrap.appendChild(img);
+    wrap.appendChild(lbl);
+    return wrap;
+  }
+
+  // ---------------- PDF CREATION ----------------
+  function createPDF(){
+    if (pendingFront !== null){
+      showToast("Please capture the BACK image to complete the current page before creating the PDF.");
+      return;
     }
-);
+    if (pages.length === 0){
+      showToast("No pages to export yet. Scan at least one page first.");
+      return;
+    }
 
+    var jspdfNS = window.jspdf;
+    if (!jspdfNS || !jspdfNS.jsPDF){
+      showToast("PDF library failed to load. Check your internet connection and reload the page.");
+      return;
+    }
 
-/* =========================================================
-   STOP CAMERA
-========================================================= */
+    var createBtn = $("createPdfBtn");
+    var originalText = createBtn.textContent;
+    createBtn.disabled = true;
+    createBtn.textContent = "Creating PDF…";
 
-window.addEventListener(
-    "beforeunload",
-    () => {
+    // Let the UI update before the (potentially heavy) synchronous work starts
+    setTimeout(function(){
+      try{
+        var jsPDF = jspdfNS.jsPDF;
+        var doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4", compress: true });
 
-        if (stream) {
+        var pageW = 297, pageH = 210;
+        var cardW = 110;
+        var cardH = cardW / 1.586; // preserves the credit-card ratio
+        var gap = 14;
+        var totalW = (cardW * 2) + gap;
+        var startX = (pageW - totalW) / 2;
+        var imgY = (pageH - cardH) / 2;
 
-            stream
-                .getTracks()
-                .forEach(
-                    track =>
-                        track.stop()
-                );
+        for (var i = 0; i < pages.length; i++){
+          if (i > 0){ doc.addPage("a4", "landscape"); }
+          var page = pages[i];
+          var backX = startX + cardW + gap;
 
+          doc.addImage(page.front, "JPEG", startX, imgY, cardW, cardH, undefined, "MEDIUM");
+          doc.addImage(page.back, "JPEG", backX, imgY, cardW, cardH, undefined, "MEDIUM");
+
+          doc.setFontSize(9);
+          doc.setTextColor(90, 90, 90);
+          doc.text("FRONT", startX, imgY - 3);
+          doc.text("BACK", backX, imgY - 3);
+
+          doc.setFontSize(8);
+          doc.setTextColor(150, 150, 150);
+          doc.text("Page " + (i + 1) + " of " + pages.length, pageW / 2, pageH - 6, { align: "center" });
         }
 
-    }
-);
+        var dateStr = new Date().toISOString().slice(0, 10);
+        doc.save("scanned-document-" + dateStr + ".pdf");
+        showToast("PDF created successfully.");
+      } catch(err){
+        console.error("PDF creation failed:", err);
+        showToast("Could not create the PDF: " + (err && err.message ? err.message : "Unknown error."));
+      } finally {
+        createBtn.disabled = false;
+        createBtn.textContent = originalText;
+      }
+    }, 30);
+  }
 
+  // ---------------- EVENT WIRING ----------------
+  document.addEventListener("DOMContentLoaded", function(){
+    $("captureBtn").addEventListener("click", captureFrame);
+    $("switchCamBtn").addEventListener("click", switchCamera);
+
+    $("pagesBtn").addEventListener("click", function(){
+      renderPages();
+      showScreen("pagesScreen");
+    });
+
+    $("backToCameraBtn").addEventListener("click", function(){
+      showScreen("cameraScreen");
+    });
+
+    $("createPdfBtn").addEventListener("click", createPDF);
+
+    $("retryCamBtn").addEventListener("click", function(){
+      startCamera(facingMode);
+    });
+
+    startCamera("environment");
+  });
+
+})();
 </script>
-
 </body>
 </html>
