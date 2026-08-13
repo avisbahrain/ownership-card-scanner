@@ -2,11 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-
 <meta name="viewport"
       content="width=device-width, initial-scale=1, viewport-fit=cover">
 
 <title>Document Scanner</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <style>
 * {
@@ -18,70 +19,28 @@ body {
     margin: 0;
     padding: 0;
     width: 100%;
-    min-height: 100%;
-    background: #111;
-    color: white;
+    height: 100%;
+    overflow: hidden;
+    background: #000;
     font-family: Arial, sans-serif;
 }
 
-body {
-    overflow-x: hidden;
-}
-
-/* =========================
-   APP
-========================= */
-
-.app {
+#app {
     width: 100%;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-}
-
-/* =========================
-   HEADER
-========================= */
-
-.header {
-    height: 64px;
-    background: #171717;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 18px;
-    flex-shrink: 0;
-}
-
-.header h1 {
-    margin: 0;
-    font-size: 20px;
-}
-
-.page-count {
-    font-size: 14px;
-    color: #bbb;
-}
-
-/* =========================
-   CAMERA
-========================= */
-
-.camera-area {
+    height: 100%;
     position: relative;
-    width: 100%;
-    height: min(68vh, 720px);
-    min-height: 420px;
+    background: #000;
+}
+
+/* CAMERA */
+
+#cameraContainer {
+    position: absolute;
+    inset: 0;
     background: #000;
     overflow: hidden;
 }
 
-/*
- IMPORTANT:
- The video fills the entire camera area.
- This removes the black side bars caused by
- contain/aspect-ratio mismatch.
-*/
 #video {
     position: absolute;
     inset: 0;
@@ -94,14 +53,26 @@ body {
     background: #000;
 }
 
-/* =========================
-   DOCUMENT GUIDE
-========================= */
+/*
+ Do NOT use object-fit: contain.
+ contain creates black bars.
+ cover fills the entire screen.
+*/
 
-.guide {
+#overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+/* Document guide */
+
+#guide {
     position: absolute;
 
-    width: min(88vw, 520px);
+    width: 82vw;
+    max-width: 700px;
+
     aspect-ratio: 1.586 / 1;
 
     left: 50%;
@@ -109,316 +80,396 @@ body {
 
     transform: translate(-50%, -50%);
 
-    border: 3px solid #00e676;
-    border-radius: 14px;
+    border: 3px solid rgba(255,255,255,.95);
+    border-radius: 12px;
 
     box-shadow:
-        0 0 0 9999px rgba(0,0,0,0.25),
-        0 0 20px rgba(0,230,118,0.35);
+        0 0 0 9999px rgba(0,0,0,.35);
 
-    pointer-events: none;
+    transition: border-color .2s;
 }
 
-.guide-label {
-    position: absolute;
-    left: 50%;
-    top: -34px;
-
-    transform: translateX(-50%);
-
-    background: rgba(0,0,0,0.75);
-    padding: 7px 14px;
-    border-radius: 20px;
-
-    font-size: 13px;
-    white-space: nowrap;
+#guide.detected {
+    border-color: #00e676;
 }
+
+/* Corner marks */
 
 .corner {
     position: absolute;
-    width: 28px;
-    height: 28px;
-    border-color: white;
-    border-style: solid;
+    width: 35px;
+    height: 35px;
 }
 
 .corner.tl {
-    left: -3px;
     top: -3px;
-    border-width: 5px 0 0 5px;
+    left: -3px;
+    border-top: 5px solid white;
+    border-left: 5px solid white;
+    border-radius: 10px 0 0 0;
 }
 
 .corner.tr {
-    right: -3px;
     top: -3px;
-    border-width: 5px 5px 0 0;
+    right: -3px;
+    border-top: 5px solid white;
+    border-right: 5px solid white;
+    border-radius: 0 10px 0 0;
 }
 
 .corner.bl {
-    left: -3px;
     bottom: -3px;
-    border-width: 0 0 5px 5px;
+    left: -3px;
+    border-bottom: 5px solid white;
+    border-left: 5px solid white;
+    border-radius: 0 0 0 10px;
 }
 
 .corner.br {
-    right: -3px;
     bottom: -3px;
-    border-width: 0 5px 5px 0;
+    right: -3px;
+    border-bottom: 5px solid white;
+    border-right: 5px solid white;
+    border-radius: 0 0 10px 0;
 }
 
-/* =========================
-   DETECTION STATUS
-========================= */
+/* TOP */
 
-.status {
+#topBar {
     position: absolute;
-    top: 15px;
-    left: 50%;
-    transform: translateX(-50%);
-
-    background: rgba(0,0,0,0.72);
-    padding: 9px 15px;
-
-    border-radius: 20px;
-
-    font-size: 13px;
-    white-space: nowrap;
-
-    z-index: 5;
-}
-
-.status.detected {
-    background: rgba(0,150,70,0.85);
-}
-
-/* =========================
-   CAMERA BUTTON
-========================= */
-
-.camera-controls {
-    position: absolute;
-
-    bottom: 20px;
+    top: 0;
     left: 0;
     right: 0;
 
-    display: flex;
-    justify-content: center;
+    padding:
+        calc(env(safe-area-inset-top) + 14px)
+        16px
+        14px;
+
+    background: linear-gradient(
+        rgba(0,0,0,.75),
+        rgba(0,0,0,0)
+    );
+
+    color: white;
+    text-align: center;
 
     z-index: 10;
 }
 
-.capture-btn {
+#title {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+#instruction {
+    margin-top: 6px;
+    font-size: 14px;
+    opacity: .9;
+}
+
+/* DETECTION STATUS */
+
+#status {
+    position: absolute;
+
+    top: calc(env(safe-area-inset-top) + 85px);
+
+    left: 50%;
+    transform: translateX(-50%);
+
+    z-index: 20;
+
+    padding: 8px 14px;
+
+    border-radius: 20px;
+
+    background: rgba(0,0,0,.65);
+    color: white;
+
+    font-size: 13px;
+
+    white-space: nowrap;
+}
+
+/* BOTTOM */
+
+#bottom {
+    position: absolute;
+
+    left: 0;
+    right: 0;
+    bottom: 0;
+
+    padding:
+        15px
+        16px
+        calc(env(safe-area-inset-bottom) + 15px);
+
+    background: linear-gradient(
+        rgba(0,0,0,0),
+        rgba(0,0,0,.9)
+    );
+
+    z-index: 10;
+}
+
+/* Capture */
+
+#captureButton {
+    display: block;
+
     width: 78px;
     height: 78px;
+
+    margin: 0 auto 14px;
 
     border-radius: 50%;
 
     border: 6px solid white;
+
     background: #fff;
 
-    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    box-shadow:
+        0 3px 15px rgba(0,0,0,.5);
 
     cursor: pointer;
 
-    transition: transform 0.12s;
+    position: relative;
 }
 
-.capture-btn:active {
-    transform: scale(0.88);
+#captureButton::after {
+    content: "";
+
+    position: absolute;
+
+    width: 62px;
+    height: 62px;
+
+    left: 50%;
+    top: 50%;
+
+    transform: translate(-50%, -50%);
+
+    border-radius: 50%;
+
+    background: #e53935;
 }
 
-.capture-btn:disabled {
-    opacity: 0.45;
+#captureButton:active {
+    transform: scale(.94);
 }
 
-/* =========================
-   BOTTOM PANEL
-========================= */
-
-.bottom {
-    background: #171717;
-    padding: 16px;
-    flex: 1;
-}
-
-.instruction {
-    text-align: center;
-    font-size: 15px;
-    margin-bottom: 12px;
-    color: #ddd;
-}
+/* Buttons */
 
 .buttons {
     display: flex;
     gap: 10px;
     justify-content: center;
-    flex-wrap: wrap;
 }
 
 button {
     border: 0;
-    border-radius: 9px;
 
-    padding: 13px 20px;
+    padding: 12px 18px;
 
-    font-size: 15px;
+    border-radius: 10px;
+
+    font-size: 14px;
     font-weight: bold;
 
     cursor: pointer;
 }
 
-.primary {
-    background: #00e676;
-    color: #000;
-}
-
 .secondary {
-    background: #333;
+    background: rgba(255,255,255,.9);
+    color: #111;
+}
+
+.primary {
+    background: #1976d2;
     color: white;
 }
 
-.danger {
-    background: #d32f2f;
+.success {
+    background: #00a86b;
     color: white;
 }
 
-button:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
-}
+/* PAGES */
 
-/* =========================
-   PREVIEW
-========================= */
-
-.preview-section {
-    margin-top: 18px;
-}
-
-.preview-title {
-    font-size: 14px;
-    color: #aaa;
-    margin-bottom: 10px;
-}
-
-.pages {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.page-card {
-    background: #242424;
-    border-radius: 10px;
-    padding: 10px;
-}
-
-.page-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-
-    font-size: 13px;
-    margin-bottom: 8px;
-}
-
-.page-images {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-}
-
-.preview {
-    position: relative;
-    background: #111;
-    border-radius: 8px;
-    overflow: hidden;
-    aspect-ratio: 1.586 / 1;
-}
-
-.preview img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.preview-label {
+#pagesPanel {
     position: absolute;
-    left: 7px;
-    top: 7px;
 
-    background: rgba(0,0,0,0.7);
-    padding: 5px 8px;
-
-    border-radius: 5px;
-    font-size: 11px;
-}
-
-/* =========================
-   MESSAGE
-========================= */
-
-.message {
-    position: fixed;
-
-    left: 50%;
-    bottom: 25px;
-
-    transform: translateX(-50%);
-
-    background: #222;
-
-    padding: 12px 18px;
-
-    border-radius: 8px;
-
-    display: none;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: 0;
 
     z-index: 100;
 
-    box-shadow: 0 5px 20px rgba(0,0,0,0.4);
+    background: #f5f5f5;
+
+    display: none;
+
+    overflow-y: auto;
 }
 
-.message.show {
-    display: block;
+#pagesHeader {
+    position: sticky;
+    top: 0;
+
+    background: white;
+
+    padding:
+        calc(env(safe-area-inset-top) + 15px)
+        15px
+        15px;
+
+    border-bottom: 1px solid #ddd;
+
+    z-index: 5;
 }
 
-/* =========================
-   LOADING
-========================= */
+#pagesHeader h2 {
+    margin: 0 0 5px;
+}
 
-.loading {
+#pagesHeader p {
+    margin: 0;
+    color: #666;
+    font-size: 14px;
+}
+
+#pages {
+    padding: 15px;
+}
+
+.page {
+    background: white;
+
+    border-radius: 12px;
+
+    padding: 12px;
+
+    margin-bottom: 15px;
+
+    box-shadow:
+        0 2px 8px rgba(0,0,0,.12);
+}
+
+.pageTitle {
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.photos {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.photoBox {
+    position: relative;
+}
+
+.photoBox img {
+    width: 100%;
+    aspect-ratio: 1.586 / 1;
+
+    object-fit: cover;
+
+    border-radius: 8px;
+
+    background: #ddd;
+}
+
+.photoLabel {
+    font-size: 12px;
+    text-align: center;
+    margin-top: 5px;
+    color: #555;
+}
+
+.deletePage {
+    width: 100%;
+    margin-top: 10px;
+
+    background: #ffebee;
+    color: #c62828;
+}
+
+/* MODAL */
+
+#message {
     position: fixed;
+
     inset: 0;
 
-    background: rgba(0,0,0,0.8);
+    background: rgba(0,0,0,.75);
 
     display: none;
 
     align-items: center;
     justify-content: center;
 
-    z-index: 200;
-
-    flex-direction: column;
-    gap: 15px;
+    z-index: 500;
 }
 
-.loading.show {
-    display: flex;
+.messageBox {
+    width: min(90%, 400px);
+
+    background: white;
+
+    border-radius: 15px;
+
+    padding: 25px;
+
+    text-align: center;
 }
 
-.spinner {
-    width: 42px;
-    height: 42px;
+.messageBox h3 {
+    margin-top: 0;
+}
 
-    border: 4px solid #444;
-    border-top-color: #00e676;
+.messageBox button {
+    margin-top: 15px;
+    width: 100%;
+}
+
+/* PROCESSING */
+
+#processing {
+    position: fixed;
+
+    inset: 0;
+
+    background: rgba(0,0,0,.85);
+
+    display: none;
+
+    align-items: center;
+    justify-content: center;
+
+    z-index: 1000;
+
+    color: white;
+
+    text-align: center;
+}
+
+.loader {
+    width: 45px;
+    height: 45px;
+
+    border: 5px solid rgba(255,255,255,.3);
+    border-top-color: white;
 
     border-radius: 50%;
 
-    animation: spin 0.8s linear infinite;
+    animation: spin .8s linear infinite;
+
+    margin: 0 auto 15px;
 }
 
 @keyframes spin {
@@ -427,41 +478,16 @@ button:disabled {
     }
 }
 
-/* =========================
-   MOBILE
-========================= */
+/* Desktop */
 
-@media (max-width: 600px) {
+@media (min-width: 800px) {
 
-    .header {
-        height: 58px;
+    #guide {
+        width: 650px;
     }
 
-    .header h1 {
-        font-size: 18px;
-    }
-
-    .camera-area {
-        height: 60vh;
-        min-height: 390px;
-    }
-
-    .guide {
-        width: 88vw;
-    }
-
-    .capture-btn {
-        width: 72px;
-        height: 72px;
-    }
-
-    .bottom {
-        padding: 13px;
-    }
-
-    button {
-        padding: 12px 16px;
-        font-size: 14px;
+    #bottom {
+        padding-bottom: 25px;
     }
 }
 </style>
@@ -469,99 +495,142 @@ button:disabled {
 
 <body>
 
-<div class="app">
+<div id="app">
 
-    <div class="header">
-        <h1>Document Scanner</h1>
-        <div class="page-count" id="pageCount">
-            Page 1
-        </div>
-    </div>
-
-    <div class="camera-area">
+    <div id="cameraContainer">
 
         <video
             id="video"
             autoplay
-            playsinline
-            muted>
+            muted
+            playsinline>
         </video>
 
-        <div class="status" id="status">
+        <div id="overlay">
+
+            <div id="guide">
+
+                <div class="corner tl"></div>
+                <div class="corner tr"></div>
+                <div class="corner bl"></div>
+                <div class="corner br"></div>
+
+            </div>
+
+        </div>
+
+        <div id="topBar">
+
+            <div id="title">
+                Document Scanner
+            </div>
+
+            <div id="instruction">
+                Capture FRONT
+            </div>
+
+        </div>
+
+        <div id="status">
             Position document inside the frame
         </div>
 
-        <div class="guide">
+        <div id="bottom">
 
-            <div class="guide-label" id="guideLabel">
-                FRONT
-            </div>
-
-            <div class="corner tl"></div>
-            <div class="corner tr"></div>
-            <div class="corner bl"></div>
-            <div class="corner br"></div>
-
-        </div>
-
-        <div class="camera-controls">
-
-            <!-- MANUAL CAPTURE -->
             <button
-                class="capture-btn"
-                id="captureBtn"
+                id="captureButton"
                 aria-label="Capture">
             </button>
 
+            <div class="buttons">
+
+                <button
+                    class="secondary"
+                    onclick="switchCamera()">
+                    🔄 Camera
+                </button>
+
+                <button
+                    class="secondary"
+                    onclick="openPages()">
+                    📄 Pages (<span id="pageCount">0</span>)
+                </button>
+
+            </div>
+
         </div>
 
     </div>
 
-    <div class="bottom">
 
-        <div class="instruction" id="instruction">
-            Capture the FRONT side
+    <!-- PAGES -->
+
+    <div id="pagesPanel">
+
+        <div id="pagesHeader">
+
+            <h2>Scanned Pages</h2>
+
+            <p>
+                Each page contains Front + Back.
+            </p>
+
+            <div class="buttons" style="margin-top:12px">
+
+                <button
+                    class="primary"
+                    onclick="continueScanning()">
+                    📷 Continue Scanning
+                </button>
+
+                <button
+                    class="success"
+                    onclick="createPDF()">
+                    📄 Create PDF
+                </button>
+
+            </div>
+
         </div>
 
-        <div class="buttons">
+        <div id="pages"></div>
 
-            <button
-                class="secondary"
-                id="startBtn">
-                Start Camera
-            </button>
+    </div>
 
-            <button
-                class="secondary"
-                id="switchBtn">
-                Switch Camera
-            </button>
 
-            <button
-                class="danger"
-                id="retakeBtn"
-                disabled>
-                Retake
-            </button>
+    <!-- MESSAGE -->
+
+    <div id="message">
+
+        <div class="messageBox">
+
+            <h3 id="messageTitle">
+                Error
+            </h3>
+
+            <p id="messageText"></p>
 
             <button
                 class="primary"
-                id="pdfBtn"
-                disabled>
-                Create PDF
+                onclick="closeMessage()">
+                OK
             </button>
 
         </div>
 
-        <div class="preview-section">
+    </div>
 
-            <div class="preview-title">
-                Scanned Pages
-            </div>
 
-            <div
-                class="pages"
-                id="pages">
+    <!-- PROCESSING -->
+
+    <div id="processing">
+
+        <div>
+
+            <div class="loader"></div>
+
+            <div id="processingText">
+                Creating PDF...
             </div>
 
         </div>
@@ -570,91 +639,58 @@ button:disabled {
 
 </div>
 
-<canvas id="canvas" style="display:none;"></canvas>
 
-<div class="message" id="message"></div>
+<!-- Hidden canvas -->
 
-<div class="loading" id="loading">
-
-    <div class="spinner"></div>
-
-    <div>
-        Creating PDF...
-    </div>
-
-</div>
-
-
-<!-- jsPDF -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
+<canvas id="canvas"></canvas>
 
 
 <script>
 
-"use strict";
-
-/* =========================================================
-   VARIABLES
-========================================================= */
-
 const video = document.getElementById("video");
 const canvas = document.getElementById("canvas");
 
-const captureBtn = document.getElementById("captureBtn");
-const startBtn = document.getElementById("startBtn");
-const switchBtn = document.getElementById("switchBtn");
-const retakeBtn = document.getElementById("retakeBtn");
-const pdfBtn = document.getElementById("pdfBtn");
+const guide = document.getElementById("guide");
+const instruction = document.getElementById("instruction");
+const statusText = document.getElementById("status");
 
-const statusEl = document.getElementById("status");
-const instructionEl = document.getElementById("instruction");
-const guideLabel = document.getElementById("guideLabel");
+const captureButton =
+    document.getElementById("captureButton");
 
-const pagesEl = document.getElementById("pages");
-const pageCountEl = document.getElementById("pageCount");
+const pageCount =
+    document.getElementById("pageCount");
 
-const messageEl = document.getElementById("message");
-const loadingEl = document.getElementById("loading");
+const pagesPanel =
+    document.getElementById("pagesPanel");
+
+const pagesContainer =
+    document.getElementById("pages");
+
+const message =
+    document.getElementById("message");
+
+const messageTitle =
+    document.getElementById("messageTitle");
+
+const messageText =
+    document.getElementById("messageText");
+
+const processing =
+    document.getElementById("processing");
+
+const processingText =
+    document.getElementById("processingText");
+
 
 let stream = null;
 
 let facingMode = "environment";
 
-/*
- Current side:
- FRONT -> BACK -> new FRONT -> BACK
-*/
 let currentSide = "front";
 
-/*
- Each page:
- {
-    front: dataURL,
-    back: dataURL
- }
-*/
-let pages = [];
+let currentFront = null;
 
-/*
- Temporary image captured before
- confirming the page.
-*/
-let lastCapture = null;
-
-
-/* =========================================================
-   MESSAGE
-========================================================= */
-
-function showMessage(text, duration = 2500) {
-
-    messageEl.textContent = text;
-    messageEl.classList.add("show");
-
-    setTimeout(() => {
-        messageEl.classList.remove("show");
-    }, duration);
-}
+let pagesData = [];
 
 
 /* =========================================================
@@ -665,20 +701,18 @@ async function startCamera() {
 
     try {
 
-        stopCamera();
+        if (stream) {
 
-        if (!navigator.mediaDevices ||
-            !navigator.mediaDevices.getUserMedia) {
-
-            showMessage(
-                "Camera is not supported by this browser."
+            stream.getTracks().forEach(
+                track => track.stop()
             );
 
-            return;
         }
 
         stream = await navigator.mediaDevices.getUserMedia({
+
             video: {
+
                 facingMode: {
                     ideal: facingMode
                 },
@@ -689,55 +723,37 @@ async function startCamera() {
 
                 height: {
                     ideal: 1080
+                },
+
+                aspectRatio: {
+                    ideal: 16 / 9
                 }
             },
 
             audio: false
+
         });
 
         video.srcObject = stream;
 
         await video.play();
 
-        startBtn.textContent = "Camera On";
-
-        startBtn.disabled = true;
-
-        captureBtn.disabled = false;
-
-        statusEl.textContent =
+        statusText.textContent =
             "Position document inside the frame";
 
-        showMessage("Camera ready");
+        guide.classList.remove("detected");
 
     } catch (error) {
 
         console.error(error);
 
         showMessage(
-            "Could not open camera. Allow camera permission and use HTTPS."
+            "Camera Error",
+            "Could not open the camera. Please allow camera permission and make sure the site is using HTTPS."
         );
 
     }
-}
 
-
-function stopCamera() {
-
-    if (stream) {
-
-        stream.getTracks().forEach(track => {
-            track.stop();
-        });
-
-        stream = null;
-    }
-
-    video.srcObject = null;
-
-    startBtn.disabled = false;
-
-    startBtn.textContent = "Start Camera";
 }
 
 
@@ -747,90 +763,40 @@ function stopCamera() {
 
 async function switchCamera() {
 
-    if (!navigator.mediaDevices) {
-        return;
-    }
-
     facingMode =
         facingMode === "environment"
             ? "user"
             : "environment";
 
     await startCamera();
+
 }
 
 
 /* =========================================================
-   UPDATE UI
+   SIDE
 ========================================================= */
 
-function updateUI() {
-
-    const pageNumber = pages.length + 1;
-
-    pageCountEl.textContent =
-        "Page " + pageNumber;
+function updateInstruction() {
 
     if (currentSide === "front") {
 
-        guideLabel.textContent = "FRONT";
+        instruction.textContent =
+            "Capture FRONT";
 
-        instructionEl.textContent =
-            "Capture the FRONT side";
+        statusText.textContent =
+            "Position FRONT inside the frame";
 
     } else {
 
-        guideLabel.textContent = "BACK";
+        instruction.textContent =
+            "Capture BACK";
 
-        instructionEl.textContent =
-            "Capture the BACK side";
+        statusText.textContent =
+            "Position BACK inside the frame";
+
     }
 
-    /*
-       PDF button only becomes available
-       when at least one complete page exists.
-    */
-
-    pdfBtn.disabled = pages.length === 0;
-
-    /*
-       Retake available if we have a temporary
-       capture.
-    */
-
-    retakeBtn.disabled =
-        lastCapture === null;
-}
-
-
-/* =========================================================
-   GET GUIDE RECTANGLE
-========================================================= */
-
-function getGuideRect() {
-
-    const guide =
-        document.querySelector(".guide");
-
-    const videoRect =
-        video.getBoundingClientRect();
-
-    const guideRect =
-        guide.getBoundingClientRect();
-
-    return {
-        left:
-            guideRect.left - videoRect.left,
-
-        top:
-            guideRect.top - videoRect.top,
-
-        width:
-            guideRect.width,
-
-        height:
-            guideRect.height
-    };
 }
 
 
@@ -838,45 +804,29 @@ function getGuideRect() {
    CAPTURE
 ========================================================= */
 
-function captureImage() {
+captureButton.addEventListener(
+    "click",
+    capturePhoto
+);
 
-    if (!stream) {
+
+function capturePhoto() {
+
+    if (!video.videoWidth || !video.videoHeight) {
 
         showMessage(
-            "Start the camera first."
+            "Camera Not Ready",
+            "Please wait for the camera to start."
         );
 
         return;
     }
 
-    if (!video.videoWidth ||
-        !video.videoHeight) {
-
-        showMessage(
-            "Camera is not ready yet."
-        );
-
-        return;
-    }
 
     /*
-       IMPORTANT:
-
-       The video uses object-fit: cover.
-
-       Therefore we must calculate which part
-       of the original camera image is actually
-       visible on screen.
-
-       This prevents black bars and produces a
-       correctly cropped document.
+      Capture at the camera's REAL resolution.
+      This avoids blurry screenshots.
     */
-
-    const videoRect =
-        video.getBoundingClientRect();
-
-    const guideRect =
-        getGuideRect();
 
     const sourceWidth =
         video.videoWidth;
@@ -884,230 +834,210 @@ function captureImage() {
     const sourceHeight =
         video.videoHeight;
 
-    const displayWidth =
-        videoRect.width;
-
-    const displayHeight =
-        videoRect.height;
 
     /*
-       object-fit: cover calculation
+      Center crop using credit-card ratio.
+
+      ISO/IEC 7810 ID-1 ratio:
+
+      85.60 / 53.98 = 1.586
     */
 
-    const scale =
-        Math.max(
-            displayWidth / sourceWidth,
-            displayHeight / sourceHeight
-        );
+    const targetRatio =
+        1.586;
 
-    const renderedWidth =
-        sourceWidth * scale;
 
-    const renderedHeight =
-        sourceHeight * scale;
+    let cropWidth;
+    let cropHeight;
+
+    if (
+        sourceWidth / sourceHeight
+        >
+        targetRatio
+    ) {
+
+        cropHeight =
+            sourceHeight;
+
+        cropWidth =
+            sourceHeight * targetRatio;
+
+    } else {
+
+        cropWidth =
+            sourceWidth;
+
+        cropHeight =
+            sourceWidth / targetRatio;
+
+    }
+
+
+    const sx =
+        (sourceWidth - cropWidth) / 2;
+
+    const sy =
+        (sourceHeight - cropHeight) / 2;
+
 
     /*
-       Position of rendered image inside
-       the video element.
+      High resolution output.
     */
 
-    const offsetX =
-        (displayWidth - renderedWidth) / 2;
+    const outputWidth = 1712;
+    const outputHeight = 1079;
 
-    const offsetY =
-        (displayHeight - renderedHeight) / 2;
 
-    /*
-       Guide coordinates relative to the
-       actual video element.
-    */
+    canvas.width =
+        outputWidth;
 
-    const gx =
-        guideRect.left;
+    canvas.height =
+        outputHeight;
 
-    const gy =
-        guideRect.top;
-
-    const gw =
-        guideRect.width;
-
-    const gh =
-        guideRect.height;
-
-    /*
-       Convert screen coordinates back
-       to original camera pixels.
-    */
-
-    let sx =
-        (gx - offsetX) / scale;
-
-    let sy =
-        (gy - offsetY) / scale;
-
-    let sw =
-        gw / scale;
-
-    let sh =
-        gh / scale;
-
-    /*
-       Keep crop inside source image.
-    */
-
-    sx = Math.max(0, sx);
-    sy = Math.max(0, sy);
-
-    sw = Math.min(sw, sourceWidth - sx);
-    sh = Math.min(sh, sourceHeight - sy);
-
-    /*
-       Higher resolution output.
-    */
-
-    const outputWidth = 1600;
-
-    const outputHeight =
-        Math.round(
-            outputWidth * (sh / sw)
-        );
-
-    canvas.width = outputWidth;
-    canvas.height = outputHeight;
 
     const ctx =
-        canvas.getContext("2d", {
-            alpha: false
-        });
+        canvas.getContext("2d");
 
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = "high";
+
+    /*
+      If front camera is used,
+      mirror the image.
+    */
+
+    if (facingMode === "user") {
+
+        ctx.translate(
+            outputWidth,
+            0
+        );
+
+        ctx.scale(-1, 1);
+
+    }
+
 
     ctx.drawImage(
+
         video,
 
         sx,
         sy,
-        sw,
-        sh,
+        cropWidth,
+        cropHeight,
 
         0,
         0,
         outputWidth,
         outputHeight
+
     );
 
-    /*
-       JPEG gives much smaller PDFs than PNG.
-    */
 
     const image =
         canvas.toDataURL(
             "image/jpeg",
-            0.94
+            0.95
         );
 
-    lastCapture = image;
-
-    /*
-       Automatically add to the current page.
-    */
 
     if (currentSide === "front") {
 
-        pages.push({
-            front: image,
-            back: null
-        });
-
-        /*
-           Next capture must be BACK.
-        */
+        currentFront = image;
 
         currentSide = "back";
 
-        showMessage(
-            "Front captured. Now capture the BACK."
-        );
+        updateInstruction();
+
+        /*
+          Small visual confirmation.
+        */
+
+        flashScreen();
 
     } else {
 
-        pages[pages.length - 1].back =
-            image;
+        if (!currentFront) {
 
-        /*
-           Complete page.
+            showMessage(
+                "Error",
+                "Front image is missing."
+            );
 
-           Next capture creates a new page.
-        */
+            return;
+        }
+
+
+        pagesData.push({
+
+            front: currentFront,
+
+            back: image
+
+        });
+
+
+        currentFront = null;
 
         currentSide = "front";
 
-        showMessage(
-            "Page completed. Capture the next FRONT."
-        );
+        updateInstruction();
+
+        updatePageCount();
+
+        renderPages();
+
+        flashScreen();
+
     }
 
-    lastCapture = null;
-
-    renderPages();
-
-    updateUI();
 }
 
 
 /* =========================================================
-   RETAKE
+   FLASH
 ========================================================= */
 
-function retake() {
+function flashScreen() {
 
-    if (pages.length === 0) {
-        return;
-    }
+    const flash =
+        document.createElement("div");
 
-    /*
-       If current side is BACK,
-       the previous capture was FRONT.
-    */
+    flash.style.position = "fixed";
+    flash.style.inset = "0";
+    flash.style.background = "white";
+    flash.style.opacity = "0.85";
+    flash.style.zIndex = "10000";
+    flash.style.pointerEvents = "none";
 
-    if (currentSide === "back") {
+    document.body.appendChild(flash);
 
-        pages.pop();
+    setTimeout(() => {
 
-        currentSide = "front";
+        flash.style.opacity = "0";
 
-        showMessage(
-            "Front removed. Capture it again."
-        );
+        flash.style.transition =
+            "opacity .2s";
 
-    } else {
+    }, 50);
 
-        /*
-           Current side FRONT means the previous
-           capture was BACK.
-        */
+    setTimeout(() => {
 
-        const page =
-            pages[pages.length - 1];
+        flash.remove();
 
-        if (page) {
+    }, 300);
 
-            page.back = null;
+}
 
-            currentSide = "back";
 
-            showMessage(
-                "Back removed. Capture it again."
-            );
-        }
-    }
+/* =========================================================
+   PAGE COUNT
+========================================================= */
 
-    lastCapture = null;
+function updatePageCount() {
 
-    renderPages();
+    pageCount.textContent =
+        pagesData.length;
 
-    updateUI();
 }
 
 
@@ -1117,107 +1047,138 @@ function retake() {
 
 function renderPages() {
 
-    pagesEl.innerHTML = "";
+    pagesContainer.innerHTML = "";
 
-    pages.forEach((page, index) => {
+    if (pagesData.length === 0) {
 
-        const card =
-            document.createElement("div");
+        pagesContainer.innerHTML = `
+            <div style="
+                text-align:center;
+                padding:40px;
+                color:#777;
+            ">
+                No pages scanned yet.
+            </div>
+        `;
 
-        card.className = "page-card";
+        return;
+    }
 
-        const header =
-            document.createElement("div");
 
-        header.className = "page-header";
+    pagesData.forEach(
+        (page, index) => {
 
-        header.innerHTML =
-            `<span>Page ${index + 1}</span>
-             <span>${
-                page.back
-                    ? "Complete"
-                    : "Front only"
-             }</span>`;
-
-        const images =
-            document.createElement("div");
-
-        images.className = "page-images";
-
-        /*
-           FRONT
-        */
-
-        if (page.front) {
-
-            const front =
+            const element =
                 document.createElement("div");
 
-            front.className = "preview";
+            element.className =
+                "page";
 
-            front.innerHTML =
-                `<img src="${page.front}">
-                 <div class="preview-label">
-                    FRONT
-                 </div>`;
+            element.innerHTML = `
 
-            images.appendChild(front);
+                <div class="pageTitle">
+                    Page ${index + 1}
+                </div>
+
+                <div class="photos">
+
+                    <div class="photoBox">
+
+                        <img
+                            src="${page.front}"
+                            alt="Front">
+
+                        <div class="photoLabel">
+                            FRONT
+                        </div>
+
+                    </div>
+
+                    <div class="photoBox">
+
+                        <img
+                            src="${page.back}"
+                            alt="Back">
+
+                        <div class="photoLabel">
+                            BACK
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <button
+                    class="deletePage"
+                    onclick="deletePage(${index})">
+
+                    🗑 Delete Page
+
+                </button>
+            `;
+
+
+            pagesContainer.appendChild(
+                element
+            );
+
         }
+    );
 
-        /*
-           BACK
-        */
-
-        if (page.back) {
-
-            const back =
-                document.createElement("div");
-
-            back.className = "preview";
-
-            back.innerHTML =
-                `<img src="${page.back}">
-                 <div class="preview-label">
-                    BACK
-                 </div>`;
-
-            images.appendChild(back);
-
-        } else {
-
-            const empty =
-                document.createElement("div");
-
-            empty.className = "preview";
-
-            empty.style.display = "flex";
-            empty.style.alignItems = "center";
-            empty.style.justifyContent = "center";
-            empty.style.color = "#777";
-            empty.textContent =
-                "Waiting for BACK";
-
-            images.appendChild(empty);
-        }
-
-        card.appendChild(header);
-        card.appendChild(images);
-
-        pagesEl.appendChild(card);
-    });
 }
 
 
 /* =========================================================
-   REMOVE INCOMPLETE PAGE BEFORE PDF
+   DELETE PAGE
 ========================================================= */
 
-function getCompletePages() {
+function deletePage(index) {
 
-    return pages.filter(page =>
-        page.front &&
-        page.back
+    if (
+        !confirm(
+            `Delete Page ${index + 1}?`
+        )
+    ) {
+
+        return;
+    }
+
+
+    pagesData.splice(
+        index,
+        1
     );
+
+    updatePageCount();
+
+    renderPages();
+
+}
+
+
+/* =========================================================
+   OPEN PAGES
+========================================================= */
+
+function openPages() {
+
+    pagesPanel.style.display =
+        "block";
+
+    renderPages();
+
+}
+
+
+/* =========================================================
+   CONTINUE
+========================================================= */
+
+function continueScanning() {
+
+    pagesPanel.style.display =
+        "none";
+
 }
 
 
@@ -1227,169 +1188,231 @@ function getCompletePages() {
 
 async function createPDF() {
 
-    const completePages =
-        getCompletePages();
-
-    if (completePages.length === 0) {
+    if (pagesData.length === 0) {
 
         showMessage(
-            "Capture both FRONT and BACK first."
+            "No Pages",
+            "Please scan at least one page before creating the PDF."
         );
 
         return;
+
     }
 
-    try {
 
-        loadingEl.classList.add("show");
+    /*
+      If user has captured FRONT but
+      hasn't captured BACK, prevent PDF.
+    */
 
-        /*
-           Give browser time to update loading screen.
-        */
+    if (currentFront) {
 
-        await new Promise(resolve =>
-            setTimeout(resolve, 100)
+        showMessage(
+            "Incomplete Page",
+            "You captured a FRONT image but not the BACK image. Please capture the BACK first."
         );
+
+        return;
+
+    }
+
+
+    processing.style.display =
+        "flex";
+
+    processingText.textContent =
+        "Creating PDF...";
+
+
+    try {
 
         const {
             jsPDF
         } = window.jspdf;
 
-        /*
-           Credit-card ratio:
-           85.60 × 53.98 mm
-
-           We use this ratio for each image.
-        */
-
-        const cardWidth = 85.60;
-        const cardHeight = 53.98;
 
         /*
-           A4 page.
+          A4 PDF.
+
+          Landscape is used because
+          each page contains two images.
         */
 
         const pdf =
             new jsPDF({
-                orientation: "portrait",
+
+                orientation: "landscape",
+
                 unit: "mm",
+
                 format: "a4",
+
                 compress: true
+
             });
 
-        const pageWidth =
-            pdf.internal.pageSize.getWidth();
 
-        const pageHeight =
-            pdf.internal.pageSize.getHeight();
+        const pdfWidth =
+            297;
+
+        const pdfHeight =
+            210;
+
 
         /*
-           Two cards vertically.
+          Margins
         */
 
-        const gap = 12;
+        const margin =
+            12;
 
-        const totalHeight =
-            cardHeight * 2 + gap;
+        const gap =
+            8;
 
-        const startY =
-            (pageHeight - totalHeight) / 2;
 
-        const x =
-            (pageWidth - cardWidth) / 2;
+        const availableWidth =
+            pdfWidth
+            -
+            margin * 2
+            -
+            gap;
+
+
+        const imageWidth =
+            availableWidth / 2;
+
+
+        /*
+          Credit-card ratio.
+        */
+
+        const imageHeight =
+            imageWidth / 1.586;
+
+
+        const y =
+            (pdfHeight - imageHeight) / 2;
+
 
         for (
             let i = 0;
-            i < completePages.length;
+            i < pagesData.length;
             i++
         ) {
 
             if (i > 0) {
+
                 pdf.addPage();
+
             }
 
+
+            processingText.textContent =
+                `Creating PDF page ${i + 1} of ${pagesData.length}...`;
+
+
             const page =
-                completePages[i];
+                pagesData[i];
+
 
             /*
-               FRONT
+              FRONT
             */
 
             pdf.addImage(
+
                 page.front,
+
                 "JPEG",
-                x,
-                startY,
-                cardWidth,
-                cardHeight,
+
+                margin,
+
+                y,
+
+                imageWidth,
+
+                imageHeight,
+
                 undefined,
-                "MEDIUM"
+
+                "FAST"
+
             );
 
+
             /*
-               BACK
+              BACK
             */
 
             pdf.addImage(
+
                 page.back,
+
                 "JPEG",
-                x,
-                startY + cardHeight + gap,
-                cardWidth,
-                cardHeight,
+
+                margin
+                +
+                imageWidth
+                +
+                gap,
+
+                y,
+
+                imageWidth,
+
+                imageHeight,
+
                 undefined,
-                "MEDIUM"
+
+                "FAST"
+
             );
 
+
             /*
-               Page number
+              Labels
             */
 
             pdf.setFontSize(8);
 
             pdf.text(
-                `Page ${i + 1}`,
-                pageWidth / 2,
-                pageHeight - 10,
-                {
-                    align: "center"
-                }
+                "FRONT",
+                margin,
+                y - 3
             );
+
+            pdf.text(
+                "BACK",
+                margin
+                +
+                imageWidth
+                +
+                gap,
+                y - 3
+            );
+
         }
 
+
         /*
-           Filename
+          Save.
         */
 
-        const now =
-            new Date();
+        const filename =
+            "scanned-document-" +
+            new Date()
+                .toISOString()
+                .slice(0,10)
+            +
+            ".pdf";
 
-        const timestamp =
-            now.getFullYear() +
-            "-" +
-            String(
-                now.getMonth() + 1
-            ).padStart(2, "0") +
-            "-" +
-            String(
-                now.getDate()
-            ).padStart(2, "0") +
-            "_" +
-            String(
-                now.getHours()
-            ).padStart(2, "0") +
-            "-" +
-            String(
-                now.getMinutes()
-            ).padStart(2, "0");
 
-        pdf.save(
-            `document-scan-${timestamp}.pdf`
-        );
+        pdf.save(filename);
 
-        showMessage(
-            "PDF created successfully."
-        );
+
+        processing.style.display =
+            "none";
+
 
     } catch (error) {
 
@@ -1398,85 +1421,87 @@ async function createPDF() {
             error
         );
 
+        processing.style.display =
+            "none";
+
         showMessage(
-            "Could not create PDF. Please try again."
+            "PDF Creation Failed",
+            "The PDF could not be created. Please try again."
         );
 
-    } finally {
-
-        loadingEl.classList.remove("show");
     }
+
 }
 
 
 /* =========================================================
-   BUTTON EVENTS
+   MESSAGE
 ========================================================= */
 
-startBtn.addEventListener(
-    "click",
-    startCamera
-);
+function showMessage(
+    title,
+    text
+) {
 
-switchBtn.addEventListener(
-    "click",
-    switchCamera
-);
+    messageTitle.textContent =
+        title;
 
-captureBtn.addEventListener(
-    "click",
-    captureImage
-);
+    messageText.textContent =
+        text;
 
-retakeBtn.addEventListener(
-    "click",
-    retake
-);
+    message.style.display =
+        "flex";
 
-pdfBtn.addEventListener(
-    "click",
-    createPDF
-);
+}
+
+
+function closeMessage() {
+
+    message.style.display =
+        "none";
+
+}
 
 
 /* =========================================================
-   KEYBOARD
+   INITIALIZE
 ========================================================= */
 
-document.addEventListener(
-    "keydown",
-    event => {
+window.addEventListener(
+    "load",
+    async () => {
 
-        if (
-            event.code === "Space" &&
-            document.activeElement.tagName !== "BUTTON"
-        ) {
+        updateInstruction();
 
-            event.preventDefault();
+        updatePageCount();
 
-            captureImage();
-        }
+        await startCamera();
+
     }
 );
 
 
 /* =========================================================
-   PAGE EXIT
+   STOP CAMERA WHEN LEAVING
 ========================================================= */
 
 window.addEventListener(
     "beforeunload",
     () => {
-        stopCamera();
+
+        if (stream) {
+
+            stream
+                .getTracks()
+                .forEach(
+                    track =>
+                        track.stop()
+                );
+
+        }
+
     }
 );
-
-
-/* =========================================================
-   INITIAL UI
-========================================================= */
-
-updateUI();
 
 </script>
 
