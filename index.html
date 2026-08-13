@@ -10,7 +10,7 @@
 
   <meta name="theme-color" content="#000000">
 
-  <title>Card Scanner</title>
+  <title>ID Card Scanner</title>
 
   <link rel="stylesheet" href="style.css">
 
@@ -23,7 +23,7 @@
 
 <body>
 
-  <!-- ================= START ================= -->
+  <!-- ================= START SCREEN ================= -->
 
   <section id="startScreen" class="screen active">
 
@@ -31,7 +31,7 @@
 
       <div class="logo">💳</div>
 
-      <h1>Card Scanner</h1>
+      <h1>ID Card Scanner</h1>
 
       <p>
         Scan the front and back of your card.
@@ -47,13 +47,15 @@
   </section>
 
 
-  <!-- ================= CAMERA ================= -->
+  <!-- ================= CAMERA SCREEN ================= -->
 
   <section id="cameraScreen" class="camera-screen screen">
 
     <div class="camera-header">
 
-      <button id="cancelCameraBtn" class="round-btn">
+      <button
+        id="cancelCameraBtn"
+        class="round-btn">
         ✕
       </button>
 
@@ -69,7 +71,9 @@
 
       </div>
 
-      <button id="switchCameraBtn" class="round-btn">
+      <button
+        id="switchCameraBtn"
+        class="round-btn">
         🔄
       </button>
 
@@ -86,11 +90,11 @@
       </video>
 
 
+      <!-- Dark outside-card area -->
       <div class="camera-overlay"></div>
 
 
-      <!-- CREDIT CARD GUIDE -->
-
+      <!-- Credit-card guide -->
       <div
         id="documentGuide"
         class="document-guide">
@@ -103,8 +107,13 @@
       </div>
 
 
-      <div id="edgeStatus" class="edge-status">
-        Position card inside the frame
+      <!-- Detection information -->
+      <div
+        id="edgeStatus"
+        class="edge-status">
+
+        Align card inside the frame
+
       </div>
 
     </div>
@@ -119,14 +128,24 @@
         </strong>
 
         <span id="instructionText">
-          Place the entire card inside the frame
+          Position the card inside the frame
         </span>
 
       </div>
 
 
-      <button id="captureBtn" class="capture-btn">
+      <!-- IMPORTANT:
+           This is the actual capture button.
+           Detection does NOT automatically capture. -->
+
+      <button
+        id="captureBtn"
+        class="capture-btn"
+        type="button"
+        aria-label="Capture">
+
         <span></span>
+
       </button>
 
     </div>
@@ -134,9 +153,11 @@
   </section>
 
 
-  <!-- ================= PREVIEW ================= -->
+  <!-- ================= PREVIEW SCREEN ================= -->
 
-  <section id="previewScreen" class="content-screen screen">
+  <section
+    id="previewScreen"
+    class="content-screen screen">
 
     <div class="heading">
 
@@ -153,22 +174,30 @@
 
     <div class="preview-grid">
 
+      <!-- FRONT -->
+
       <div class="preview-card">
 
         <div class="preview-header">
 
           <strong>FRONT</strong>
 
-          <button id="retakeFrontBtn">
+          <button
+            id="retakeFrontBtn"
+            type="button">
             Retake
           </button>
 
         </div>
 
-        <img id="frontPreview" alt="Front">
+        <img
+          id="frontPreview"
+          alt="Front">
 
       </div>
 
+
+      <!-- BACK -->
 
       <div class="preview-card">
 
@@ -176,13 +205,17 @@
 
           <strong>BACK</strong>
 
-          <button id="retakeBackBtn">
+          <button
+            id="retakeBackBtn"
+            type="button">
             Retake
           </button>
 
         </div>
 
-        <img id="backPreview" alt="Back">
+        <img
+          id="backPreview"
+          alt="Back">
 
       </div>
 
@@ -191,12 +224,23 @@
 
     <div class="preview-buttons">
 
-      <button id="addPageBtn" class="primary-btn">
+      <button
+        id="addPageBtn"
+        class="primary-btn"
+        type="button">
+
         + Add Next Page
+
       </button>
 
-      <button id="finishBtn" class="download-btn">
+
+      <button
+        id="finishBtn"
+        class="download-btn"
+        type="button">
+
         📄 Finish & Download PDF
+
       </button>
 
     </div>
@@ -204,9 +248,11 @@
   </section>
 
 
-  <!-- ================= DOCUMENTS ================= -->
+  <!-- ================= DOCUMENTS SCREEN ================= -->
 
-  <section id="documentsScreen" class="content-screen screen">
+  <section
+    id="documentsScreen"
+    class="content-screen screen">
 
     <div class="heading">
 
@@ -221,21 +267,41 @@
     </div>
 
 
-    <div id="pagesList" class="pages-list"></div>
+    <div
+      id="pagesList"
+      class="pages-list">
+    </div>
 
 
     <div class="bottom-buttons">
 
-      <button id="addAnotherBtn" class="primary-btn">
+      <button
+        id="addAnotherBtn"
+        class="primary-btn"
+        type="button">
+
         + Scan Another Card
+
       </button>
 
-      <button id="downloadPdfBtn" class="download-btn">
+
+      <button
+        id="downloadPdfBtn"
+        class="download-btn"
+        type="button">
+
         📄 Download PDF
+
       </button>
 
-      <button id="clearAllBtn" class="danger-btn">
+
+      <button
+        id="clearAllBtn"
+        class="danger-btn"
+        type="button">
+
         Clear All
+
       </button>
 
     </div>
@@ -252,7 +318,9 @@
 
   <!-- ================= PROCESSING ================= -->
 
-  <div id="processingModal" class="modal">
+  <div
+    id="processingModal"
+    class="modal">
 
     <div class="modal-card">
 
