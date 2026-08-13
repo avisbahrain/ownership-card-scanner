@@ -16,7 +16,6 @@ body {
     sans-serif;
 
   background: #f3f4f6;
-
   color: #111827;
 }
 
@@ -25,9 +24,9 @@ body {
 }
 
 
-/* =====================================================
+/* =========================================================
    SCREENS
-===================================================== */
+========================================================= */
 
 .screen {
   display: none;
@@ -38,9 +37,9 @@ body {
 }
 
 
-/* =====================================================
-   START
-===================================================== */
+/* =========================================================
+   START SCREEN
+========================================================= */
 
 #startScreen {
   min-height: 100dvh;
@@ -68,9 +67,9 @@ body {
   width: 100%;
   max-width: 430px;
 
-  background: white;
-
   padding: 35px 25px;
+
+  background: white;
 
   border-radius: 24px;
 
@@ -115,9 +114,9 @@ body {
 }
 
 
-/* =====================================================
+/* =========================================================
    BUTTONS
-===================================================== */
+========================================================= */
 
 button {
   border: none;
@@ -127,6 +126,12 @@ button {
   font-weight: 700;
 
   cursor: pointer;
+
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:active {
+  transform: scale(.97);
 }
 
 .primary-btn,
@@ -143,42 +148,41 @@ button {
 
 .primary-btn {
   background: #111827;
-
   color: white;
 }
 
 .download-btn {
   background: #2563eb;
-
   color: white;
 }
 
 .danger-btn {
   background: #fee2e2;
-
   color: #991b1b;
 }
 
 
-/* =====================================================
-   CAMERA
-===================================================== */
+/* =========================================================
+   CAMERA SCREEN
+========================================================= */
 
 .camera-screen {
+  position: fixed;
+
+  inset: 0;
+
   width: 100%;
   height: 100dvh;
 
   background: #000;
 
   overflow: hidden;
-
-  position: fixed;
-
-  inset: 0;
 }
 
 
-/* HEADER */
+/* =========================================================
+   CAMERA HEADER
+========================================================= */
 
 .camera-header {
   height: 64px;
@@ -199,7 +203,7 @@ button {
 
   position: relative;
 
-  z-index: 20;
+  z-index: 50;
 }
 
 .camera-title {
@@ -208,6 +212,8 @@ button {
   flex-direction: column;
 
   align-items: center;
+
+  justify-content: center;
 
   gap: 3px;
 }
@@ -228,6 +234,8 @@ button {
   width: 42px;
   height: 42px;
 
+  padding: 0;
+
   border-radius: 50%;
 
   background:
@@ -236,12 +244,18 @@ button {
   color: white;
 
   font-size: 17px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
 }
 
 
-/* =====================================================
+/* =========================================================
    CAMERA CONTAINER
-===================================================== */
+========================================================= */
 
 .camera-container {
   position: relative;
@@ -259,9 +273,9 @@ button {
 }
 
 
-/* =====================================================
+/* =========================================================
    VIDEO
-===================================================== */
+========================================================= */
 
 #video {
   position: absolute;
@@ -273,34 +287,36 @@ button {
 
   display: block;
 
-  background: #000;
-
   object-fit: cover;
+
+  background: #000;
 }
 
 
-/* =====================================================
-   OVERLAY
-===================================================== */
+/* =========================================================
+   CAMERA OVERLAY
+========================================================= */
 
 .camera-overlay {
   position: absolute;
 
   inset: 0;
 
-  pointer-events: none;
-
   background:
     rgba(0,0,0,.18);
+
+  pointer-events: none;
+
+  z-index: 5;
 }
 
 
-/* =====================================================
-   DOCUMENT GUIDE
-===================================================== */
+/* =========================================================
+   CARD GUIDE
+========================================================= */
 
 /*
-   Standard credit card ratio:
+   Credit card ratio:
 
    85.60 / 53.98
    = 1.586
@@ -331,32 +347,46 @@ button {
 
   box-shadow:
     0 0 0 9999px
-    rgba(0,0,0,.35);
+    rgba(0,0,0,.38);
 
   pointer-events: none;
+
+  z-index: 10;
+
+  transition:
+    border-color .2s ease,
+    box-shadow .2s ease;
 }
+
+
+/*
+   Green means the software
+   believes it can see the card.
+
+   It DOES NOT trigger capture.
+*/
 
 .document-guide.detected {
   border-color: #00ff66;
 
   box-shadow:
     0 0 0 9999px
-    rgba(0,0,0,.25),
+    rgba(0,0,0,.28),
 
-    0 0 20px
+    0 0 22px
     rgba(0,255,102,.7);
 }
 
 
-/* =====================================================
+/* =========================================================
    CORNERS
-===================================================== */
+========================================================= */
 
 .corner {
   position: absolute;
 
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
 
   border:
     4px solid
@@ -370,7 +400,8 @@ button {
   border-right: 0;
   border-bottom: 0;
 
-  border-radius: 8px 0 0 0;
+  border-radius:
+    8px 0 0 0;
 }
 
 .corner.tr {
@@ -380,7 +411,8 @@ button {
   border-left: 0;
   border-bottom: 0;
 
-  border-radius: 0 8px 0 0;
+  border-radius:
+    0 8px 0 0;
 }
 
 .corner.bl {
@@ -390,7 +422,8 @@ button {
   border-right: 0;
   border-top: 0;
 
-  border-radius: 0 0 0 8px;
+  border-radius:
+    0 0 0 8px;
 }
 
 .corner.br {
@@ -400,20 +433,21 @@ button {
   border-left: 0;
   border-top: 0;
 
-  border-radius: 0 0 8px 0;
+  border-radius:
+    0 0 8px 0;
 }
 
 
-/* =====================================================
-   STATUS
-===================================================== */
+/* =========================================================
+   EDGE STATUS
+========================================================= */
 
 .edge-status {
   position: absolute;
 
   left: 50%;
 
-  bottom: 20px;
+  bottom: 18px;
 
   transform:
     translateX(-50%);
@@ -425,19 +459,21 @@ button {
   border-radius: 30px;
 
   background:
-    rgba(0,0,0,.7);
+    rgba(0,0,0,.72);
 
   color: white;
 
   font-size: 12px;
 
   white-space: nowrap;
+
+  z-index: 20;
 }
 
 
-/* =====================================================
+/* =========================================================
    CAMERA FOOTER
-===================================================== */
+========================================================= */
 
 .camera-footer {
   height: 120px;
@@ -451,6 +487,8 @@ button {
   align-items: center;
 
   justify-content: center;
+
+  z-index: 50;
 }
 
 .instruction {
@@ -470,6 +508,8 @@ button {
   gap: 4px;
 
   color: white;
+
+  pointer-events: none;
 }
 
 .instruction strong {
@@ -483,15 +523,19 @@ button {
 }
 
 
-/* =====================================================
+/* =========================================================
    CAPTURE BUTTON
-===================================================== */
+========================================================= */
 
 .capture-btn {
-  width: 72px;
-  height: 72px;
+  position: relative;
 
-  margin-top: 28px;
+  width: 76px;
+  height: 76px;
+
+  margin-top: 27px;
+
+  padding: 0;
 
   border-radius: 50%;
 
@@ -506,23 +550,38 @@ button {
   align-items: center;
 
   justify-content: center;
+
+  box-shadow:
+    0 0 0 3px
+    rgba(255,255,255,.15);
 }
 
 .capture-btn span {
-  width: 55px;
-  height: 55px;
+  width: 58px;
+  height: 58px;
 
   border:
     3px solid
     #111827;
 
   border-radius: 50%;
+
+  display: block;
 }
 
 
-/* =====================================================
-   CONTENT
-===================================================== */
+/*
+   Make capture button clearly interactive.
+*/
+
+.capture-btn:hover {
+  background: #f3f4f6;
+}
+
+
+/* =========================================================
+   CONTENT SCREENS
+========================================================= */
 
 .content-screen {
   min-height: 100dvh;
@@ -549,15 +608,18 @@ button {
 }
 
 .heading p {
-  margin: 7px 0 0;
+  margin:
+    7px
+    0
+    0;
 
   color: #6b7280;
 }
 
 
-/* =====================================================
+/* =========================================================
    PREVIEW
-===================================================== */
+========================================================= */
 
 .preview-grid {
   display: grid;
@@ -630,9 +692,9 @@ button {
 }
 
 
-/* =====================================================
+/* =========================================================
    PAGES
-===================================================== */
+========================================================= */
 
 .pages-list {
   display: grid;
@@ -686,6 +748,8 @@ button {
   gap: 7px;
 
   margin-top: 10px;
+
+  flex-wrap: wrap;
 }
 
 .page-actions button {
@@ -701,9 +765,9 @@ button {
 }
 
 
-/* =====================================================
+/* =========================================================
    BOTTOM BUTTONS
-===================================================== */
+========================================================= */
 
 .bottom-buttons {
   display: flex;
@@ -716,9 +780,9 @@ button {
 }
 
 
-/* =====================================================
+/* =========================================================
    MODAL
-===================================================== */
+========================================================= */
 
 .modal {
   display: none;
@@ -742,10 +806,11 @@ button {
 }
 
 .modal-card {
-  width: min(
-    90%,
-    340px
-  );
+  width:
+    min(
+      90%,
+      340px
+    );
 
   padding: 30px;
 
@@ -803,9 +868,19 @@ button {
 }
 
 
-/* =====================================================
+/* =========================================================
+   HIDDEN CANVAS
+========================================================= */
+
+#captureCanvas,
+#processingCanvas {
+  display: none;
+}
+
+
+/* =========================================================
    MOBILE
-===================================================== */
+========================================================= */
 
 @media (max-width: 600px) {
 
@@ -825,9 +900,9 @@ button {
 }
 
 
-/* =====================================================
-   SMALL SCREEN
-===================================================== */
+/* =========================================================
+   SMALL PHONES
+========================================================= */
 
 @media (max-height: 700px) {
 
@@ -843,10 +918,10 @@ button {
   }
 
   .capture-btn {
-    width: 64px;
-    height: 64px;
+    width: 66px;
+    height: 66px;
 
-    margin-top: 24px;
+    margin-top: 23px;
   }
 
   .capture-btn span {
