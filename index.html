@@ -2,12 +2,17 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport"
-      content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+>
 
 <title>Document Scanner</title>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script
+    src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">
+</script>
 
 <style>
 * {
@@ -25,25 +30,39 @@ body {
     font-family: Arial, sans-serif;
 }
 
+button {
+    font-family: inherit;
+    -webkit-tap-highlight-color: transparent;
+}
+
 #app {
+    position: relative;
     width: 100%;
     height: 100%;
-    position: relative;
+    overflow: hidden;
     background: #000;
 }
 
-/* CAMERA */
+/* =========================================================
+   CAMERA
+========================================================= */
 
 #cameraContainer {
     position: absolute;
     inset: 0;
-    background: #000;
     overflow: hidden;
+    background: #000;
 }
 
 #video {
     position: absolute;
-    inset: 0;
+
+    /*
+      Fill the entire screen.
+      No black bars.
+    */
+    left: 0;
+    top: 0;
 
     width: 100%;
     height: 100%;
@@ -54,10 +73,15 @@ body {
 }
 
 /*
- Do NOT use object-fit: contain.
- contain creates black bars.
- cover fills the entire screen.
+  Small hidden canvas used for capturing.
 */
+#canvas {
+    display: none;
+}
+
+/* =========================================================
+   OVERLAY
+========================================================= */
 
 #overlay {
     position: absolute;
@@ -65,13 +89,15 @@ body {
     pointer-events: none;
 }
 
-/* Document guide */
+/*
+  Credit-card / ID-1 ratio:
+  85.60 / 53.98 = 1.5858
+*/
 
 #guide {
     position: absolute;
 
-    width: 82vw;
-    max-width: 700px;
+    width: min(88vw, 650px);
 
     aspect-ratio: 1.586 / 1;
 
@@ -81,22 +107,32 @@ body {
     transform: translate(-50%, -50%);
 
     border: 3px solid rgba(255,255,255,.95);
+
     border-radius: 12px;
 
     box-shadow:
-        0 0 0 9999px rgba(0,0,0,.35);
+        0 0 0 9999px rgba(0,0,0,.32);
 
-    transition: border-color .2s;
+    transition:
+        border-color .2s,
+        box-shadow .2s;
 }
 
-#guide.detected {
+#guide.ready {
     border-color: #00e676;
 }
 
-/* Corner marks */
+#guide.warning {
+    border-color: #ffca28;
+}
+
+/* =========================================================
+   CORNERS
+========================================================= */
 
 .corner {
     position: absolute;
+
     width: 35px;
     height: 35px;
 }
@@ -104,39 +140,50 @@ body {
 .corner.tl {
     top: -3px;
     left: -3px;
+
     border-top: 5px solid white;
     border-left: 5px solid white;
+
     border-radius: 10px 0 0 0;
 }
 
 .corner.tr {
     top: -3px;
     right: -3px;
+
     border-top: 5px solid white;
     border-right: 5px solid white;
+
     border-radius: 0 10px 0 0;
 }
 
 .corner.bl {
     bottom: -3px;
     left: -3px;
+
     border-bottom: 5px solid white;
     border-left: 5px solid white;
+
     border-radius: 0 0 0 10px;
 }
 
 .corner.br {
     bottom: -3px;
     right: -3px;
+
     border-bottom: 5px solid white;
     border-right: 5px solid white;
+
     border-radius: 0 0 10px 0;
 }
 
-/* TOP */
+/* =========================================================
+   TOP BAR
+========================================================= */
 
 #topBar {
     position: absolute;
+
     top: 0;
     left: 0;
     right: 0;
@@ -144,55 +191,80 @@ body {
     padding:
         calc(env(safe-area-inset-top) + 14px)
         16px
-        14px;
+        16px;
 
-    background: linear-gradient(
-        rgba(0,0,0,.75),
-        rgba(0,0,0,0)
-    );
+    background:
+        linear-gradient(
+            rgba(0,0,0,.78),
+            rgba(0,0,0,0)
+        );
 
     color: white;
+
     text-align: center;
 
-    z-index: 10;
+    z-index: 20;
 }
 
 #title {
     font-size: 20px;
-    font-weight: bold;
+    font-weight: 700;
 }
 
 #instruction {
     margin-top: 6px;
-    font-size: 14px;
-    opacity: .9;
+
+    font-size: 15px;
+    font-weight: 600;
 }
 
-/* DETECTION STATUS */
+#pageInfo {
+    margin-top: 5px;
+
+    font-size: 12px;
+
+    opacity: .85;
+}
+
+/* =========================================================
+   STATUS
+========================================================= */
 
 #status {
     position: absolute;
 
-    top: calc(env(safe-area-inset-top) + 85px);
+    top: calc(
+        env(safe-area-inset-top) + 105px
+    );
 
     left: 50%;
+
     transform: translateX(-50%);
 
-    z-index: 20;
+    z-index: 30;
 
     padding: 8px 14px;
 
     border-radius: 20px;
 
-    background: rgba(0,0,0,.65);
+    background: rgba(0,0,0,.68);
+
     color: white;
 
     font-size: 13px;
 
     white-space: nowrap;
+
+    max-width: 90vw;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
 }
 
-/* BOTTOM */
+/* =========================================================
+   BOTTOM CONTROLS
+========================================================= */
 
 #bottom {
     position: absolute;
@@ -204,38 +276,45 @@ body {
     padding:
         15px
         16px
-        calc(env(safe-area-inset-bottom) + 15px);
+        calc(env(safe-area-inset-bottom) + 16px);
 
-    background: linear-gradient(
-        rgba(0,0,0,0),
-        rgba(0,0,0,.9)
-    );
+    background:
+        linear-gradient(
+            rgba(0,0,0,0),
+            rgba(0,0,0,.92)
+        );
 
-    z-index: 10;
+    z-index: 30;
 }
 
-/* Capture */
+/* =========================================================
+   CAPTURE BUTTON
+========================================================= */
 
 #captureButton {
+    position: relative;
+
     display: block;
 
-    width: 78px;
-    height: 78px;
+    width: 82px;
+    height: 82px;
 
-    margin: 0 auto 14px;
+    margin: 0 auto 15px;
+
+    padding: 0;
 
     border-radius: 50%;
 
     border: 6px solid white;
 
-    background: #fff;
+    background: white;
 
     box-shadow:
-        0 3px 15px rgba(0,0,0,.5);
+        0 4px 18px rgba(0,0,0,.55);
 
     cursor: pointer;
 
-    position: relative;
+    touch-action: manipulation;
 }
 
 #captureButton::after {
@@ -243,80 +322,109 @@ body {
 
     position: absolute;
 
-    width: 62px;
-    height: 62px;
+    width: 64px;
+    height: 64px;
 
     left: 50%;
     top: 50%;
 
-    transform: translate(-50%, -50%);
+    transform:
+        translate(-50%, -50%);
 
     border-radius: 50%;
 
     background: #e53935;
+
+    transition: transform .1s;
 }
 
-#captureButton:active {
-    transform: scale(.94);
+#captureButton:active::after {
+    transform:
+        translate(-50%, -50%)
+        scale(.88);
 }
 
-/* Buttons */
+#captureButton:disabled {
+    opacity: .45;
+}
+
+/* =========================================================
+   BUTTONS
+========================================================= */
 
 .buttons {
     display: flex;
-    gap: 10px;
+
     justify-content: center;
+
+    gap: 10px;
+
+    flex-wrap: wrap;
 }
 
 button {
-    border: 0;
+    border: none;
 
     padding: 12px 18px;
 
     border-radius: 10px;
 
     font-size: 14px;
-    font-weight: bold;
+
+    font-weight: 700;
 
     cursor: pointer;
+
+    touch-action: manipulation;
 }
 
 .secondary {
-    background: rgba(255,255,255,.9);
+    background: rgba(255,255,255,.94);
+
     color: #111;
 }
 
 .primary {
     background: #1976d2;
+
     color: white;
 }
 
 .success {
     background: #00a86b;
+
     color: white;
 }
 
-/* PAGES */
+.danger {
+    background: #e53935;
+
+    color: white;
+}
+
+/* =========================================================
+   PAGES PANEL
+========================================================= */
 
 #pagesPanel {
     position: absolute;
 
-    left: 0;
-    right: 0;
-    bottom: 0;
-    top: 0;
+    inset: 0;
 
     z-index: 100;
 
-    background: #f5f5f5;
-
     display: none;
 
+    background: #f5f5f5;
+
     overflow-y: auto;
+
+    -webkit-overflow-scrolling: touch;
 }
 
 #pagesHeader {
     position: sticky;
+
     top: 0;
 
     background: white;
@@ -333,17 +441,25 @@ button {
 
 #pagesHeader h2 {
     margin: 0 0 5px;
+
+    font-size: 22px;
 }
 
 #pagesHeader p {
     margin: 0;
+
     color: #666;
+
     font-size: 14px;
 }
 
 #pages {
     padding: 15px;
 }
+
+/* =========================================================
+   PAGE CARD
+========================================================= */
 
 .page {
     background: white;
@@ -359,22 +475,29 @@ button {
 }
 
 .pageTitle {
-    font-weight: bold;
+    font-weight: 700;
+
     margin-bottom: 10px;
 }
 
 .photos {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+
+    grid-template-columns:
+        1fr 1fr;
+
     gap: 10px;
 }
 
 .photoBox {
-    position: relative;
+    min-width: 0;
 }
 
 .photoBox img {
+    display: block;
+
     width: 100%;
+
     aspect-ratio: 1.586 / 1;
 
     object-fit: cover;
@@ -385,39 +508,63 @@ button {
 }
 
 .photoLabel {
-    font-size: 12px;
-    text-align: center;
     margin-top: 5px;
+
+    text-align: center;
+
+    font-size: 12px;
+
+    font-weight: 700;
+
     color: #555;
 }
 
 .deletePage {
     width: 100%;
+
     margin-top: 10px;
 
     background: #ffebee;
+
     color: #c62828;
 }
 
-/* MODAL */
+/* =========================================================
+   EMPTY PAGES
+========================================================= */
+
+.empty {
+    text-align: center;
+
+    padding: 50px 20px;
+
+    color: #777;
+}
+
+/* =========================================================
+   MESSAGE
+========================================================= */
 
 #message {
     position: fixed;
 
     inset: 0;
 
-    background: rgba(0,0,0,.75);
-
     display: none;
 
     align-items: center;
+
     justify-content: center;
+
+    padding: 20px;
+
+    background: rgba(0,0,0,.75);
 
     z-index: 500;
 }
 
 .messageBox {
-    width: min(90%, 400px);
+    width: min(90%, 420px);
 
     background: white;
 
@@ -426,30 +573,48 @@ button {
     padding: 25px;
 
     text-align: center;
+
+    box-shadow:
+        0 10px 40px rgba(0,0,0,.35);
 }
 
 .messageBox h3 {
-    margin-top: 0;
+    margin:
+        0
+        0
+        10px;
+}
+
+.messageBox p {
+    margin: 0;
+
+    color: #555;
+
+    line-height: 1.5;
 }
 
 .messageBox button {
-    margin-top: 15px;
     width: 100%;
+
+    margin-top: 18px;
 }
 
-/* PROCESSING */
+/* =========================================================
+   PROCESSING
+========================================================= */
 
 #processing {
     position: fixed;
 
     inset: 0;
 
-    background: rgba(0,0,0,.85);
-
     display: none;
 
     align-items: center;
+
     justify-content: center;
+
+    background: rgba(0,0,0,.88);
 
     z-index: 1000;
 
@@ -459,17 +624,23 @@ button {
 }
 
 .loader {
-    width: 45px;
-    height: 45px;
+    width: 48px;
+    height: 48px;
 
-    border: 5px solid rgba(255,255,255,.3);
+    margin:
+        0
+        auto
+        16px;
+
+    border:
+        5px solid rgba(255,255,255,.25);
+
     border-top-color: white;
 
     border-radius: 50%;
 
-    animation: spin .8s linear infinite;
-
-    margin: 0 auto 15px;
+    animation:
+        spin .8s linear infinite;
 }
 
 @keyframes spin {
@@ -478,7 +649,57 @@ button {
     }
 }
 
-/* Desktop */
+/* =========================================================
+   FLASH
+========================================================= */
+
+#flash {
+    position: fixed;
+
+    inset: 0;
+
+    background: white;
+
+    opacity: 0;
+
+    pointer-events: none;
+
+    z-index: 900;
+
+    transition: opacity .15s;
+}
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 600px) {
+
+    #guide {
+        width: 90vw;
+    }
+
+    #captureButton {
+        width: 76px;
+        height: 76px;
+    }
+
+    #captureButton::after {
+        width: 60px;
+        height: 60px;
+    }
+
+    button {
+        padding:
+            11px 14px;
+
+        font-size: 13px;
+    }
+}
+
+/* =========================================================
+   DESKTOP
+========================================================= */
 
 @media (min-width: 800px) {
 
@@ -496,6 +717,10 @@ button {
 <body>
 
 <div id="app">
+
+    <!-- =====================================================
+         CAMERA
+    ====================================================== -->
 
     <div id="cameraContainer">
 
@@ -529,13 +754,19 @@ button {
                 Capture FRONT
             </div>
 
+            <div id="pageInfo">
+                Page 1 • Front
+            </div>
+
         </div>
 
         <div id="status">
-            Position document inside the frame
+            Position the document inside the frame
         </div>
 
         <div id="bottom">
+
+            <!-- REAL MANUAL CAPTURE BUTTON -->
 
             <button
                 id="captureButton"
@@ -546,13 +777,13 @@ button {
 
                 <button
                     class="secondary"
-                    onclick="switchCamera()">
+                    id="cameraButton">
                     🔄 Camera
                 </button>
 
                 <button
                     class="secondary"
-                    onclick="openPages()">
+                    id="pagesButton">
                     📄 Pages (<span id="pageCount">0</span>)
                 </button>
 
@@ -563,29 +794,35 @@ button {
     </div>
 
 
-    <!-- PAGES -->
+    <!-- =====================================================
+         PAGES
+    ====================================================== -->
 
     <div id="pagesPanel">
 
         <div id="pagesHeader">
 
-            <h2>Scanned Pages</h2>
+            <h2>
+                Scanned Pages
+            </h2>
 
             <p>
-                Each page contains Front + Back.
+                Each page contains exactly Front + Back.
             </p>
 
-            <div class="buttons" style="margin-top:12px">
+            <div
+                class="buttons"
+                style="margin-top:12px">
 
                 <button
                     class="primary"
-                    onclick="continueScanning()">
+                    id="continueButton">
                     📷 Continue Scanning
                 </button>
 
                 <button
                     class="success"
-                    onclick="createPDF()">
+                    id="pdfButton">
                     📄 Create PDF
                 </button>
 
@@ -598,7 +835,9 @@ button {
     </div>
 
 
-    <!-- MESSAGE -->
+    <!-- =====================================================
+         MESSAGE
+    ====================================================== -->
 
     <div id="message">
 
@@ -612,7 +851,7 @@ button {
 
             <button
                 class="primary"
-                onclick="closeMessage()">
+                id="messageOK">
                 OK
             </button>
 
@@ -621,7 +860,9 @@ button {
     </div>
 
 
-    <!-- PROCESSING -->
+    <!-- =====================================================
+         PROCESSING
+    ====================================================== -->
 
     <div id="processing">
 
@@ -637,25 +878,53 @@ button {
 
     </div>
 
+
+    <div id="flash"></div>
+
 </div>
 
-
-<!-- Hidden canvas -->
 
 <canvas id="canvas"></canvas>
 
 
 <script>
 
-const video = document.getElementById("video");
-const canvas = document.getElementById("canvas");
+/* =========================================================
+   ELEMENTS
+========================================================= */
 
-const guide = document.getElementById("guide");
-const instruction = document.getElementById("instruction");
-const statusText = document.getElementById("status");
+const video =
+    document.getElementById("video");
+
+const canvas =
+    document.getElementById("canvas");
+
+const guide =
+    document.getElementById("guide");
+
+const instruction =
+    document.getElementById("instruction");
+
+const pageInfo =
+    document.getElementById("pageInfo");
+
+const statusText =
+    document.getElementById("status");
 
 const captureButton =
     document.getElementById("captureButton");
+
+const cameraButton =
+    document.getElementById("cameraButton");
+
+const pagesButton =
+    document.getElementById("pagesButton");
+
+const continueButton =
+    document.getElementById("continueButton");
+
+const pdfButton =
+    document.getElementById("pdfButton");
 
 const pageCount =
     document.getElementById("pageCount");
@@ -675,12 +944,22 @@ const messageTitle =
 const messageText =
     document.getElementById("messageText");
 
+const messageOK =
+    document.getElementById("messageOK");
+
 const processing =
     document.getElementById("processing");
 
 const processingText =
     document.getElementById("processingText");
 
+const flash =
+    document.getElementById("flash");
+
+
+/* =========================================================
+   STATE
+========================================================= */
 
 let stream = null;
 
@@ -692,6 +971,8 @@ let currentFront = null;
 
 let pagesData = [];
 
+let cameraStarting = false;
+
 
 /* =========================================================
    CAMERA
@@ -699,17 +980,58 @@ let pagesData = [];
 
 async function startCamera() {
 
+    if (cameraStarting) {
+        return;
+    }
+
+    cameraStarting = true;
+
+    captureButton.disabled = true;
+
     try {
+
+        /*
+          Stop old camera.
+        */
 
         if (stream) {
 
-            stream.getTracks().forEach(
-                track => track.stop()
-            );
+            stream
+                .getTracks()
+                .forEach(
+                    track => track.stop()
+                );
 
+            stream = null;
         }
 
-        stream = await navigator.mediaDevices.getUserMedia({
+
+        /*
+          Check browser support.
+        */
+
+        if (
+            !navigator.mediaDevices ||
+            !navigator.mediaDevices.getUserMedia
+        ) {
+
+            throw new Error(
+                "Camera API is not supported."
+            );
+        }
+
+
+        /*
+          IMPORTANT:
+          We do NOT force 16:9.
+
+          The browser chooses the best
+          available camera resolution.
+        */
+
+        const constraints = {
+
+            audio: false,
 
             video: {
 
@@ -718,39 +1040,137 @@ async function startCamera() {
                 },
 
                 width: {
-                    ideal: 1920
+                    ideal: 2560
                 },
 
                 height: {
-                    ideal: 1080
-                },
-
-                aspectRatio: {
-                    ideal: 16 / 9
+                    ideal: 1440
                 }
-            },
+            }
+        };
 
-            audio: false
 
-        });
+        stream =
+            await navigator
+                .mediaDevices
+                .getUserMedia(
+                    constraints
+                );
 
-        video.srcObject = stream;
+
+        video.srcObject =
+            stream;
+
+
+        await new Promise(
+            resolve => {
+
+                if (
+                    video.readyState >= 2
+                ) {
+
+                    resolve();
+
+                } else {
+
+                    video.onloadedmetadata =
+                        () => resolve();
+
+                }
+
+            }
+        );
+
 
         await video.play();
+
 
         statusText.textContent =
             "Position document inside the frame";
 
-        guide.classList.remove("detected");
+
+        guide.classList.remove(
+            "warning"
+        );
+
+        guide.classList.add(
+            "ready"
+        );
+
+
+        captureButton.disabled =
+            false;
+
 
     } catch (error) {
 
-        console.error(error);
+        console.error(
+            "CAMERA ERROR:",
+            error
+        );
+
+
+        guide.classList.remove(
+            "ready"
+        );
+
+
+        guide.classList.add(
+            "warning"
+        );
+
+
+        let text =
+            "Could not open the camera.";
+
+
+        if (
+            error.name ===
+            "NotAllowedError"
+        ) {
+
+            text =
+                "Camera permission was denied. Please allow camera access in your browser settings.";
+
+        } else if (
+            error.name ===
+            "NotFoundError"
+        ) {
+
+            text =
+                "No camera was found on this device.";
+
+        } else if (
+            error.name ===
+            "NotReadableError"
+        ) {
+
+            text =
+                "The camera is already being used by another application.";
+
+        } else if (
+            location.protocol !==
+            "https:" &&
+            location.hostname !==
+            "localhost"
+        ) {
+
+            text =
+                "Camera access normally requires HTTPS. Open this website using an HTTPS address.";
+
+        }
+
 
         showMessage(
             "Camera Error",
-            "Could not open the camera. Please allow camera permission and make sure the site is using HTTPS."
+            text
         );
+
+
+    } finally {
+
+        cameraStarting =
+            false;
 
     }
 
@@ -768,21 +1188,32 @@ async function switchCamera() {
             ? "user"
             : "environment";
 
+
     await startCamera();
 
 }
 
 
 /* =========================================================
-   SIDE
+   UPDATE INSTRUCTION
 ========================================================= */
 
 function updateInstruction() {
 
-    if (currentSide === "front") {
+    const pageNumber =
+        pagesData.length + 1;
+
+
+    if (
+        currentSide ===
+        "front"
+    ) {
 
         instruction.textContent =
             "Capture FRONT";
+
+        pageInfo.textContent =
+            `Page ${pageNumber} • Front`;
 
         statusText.textContent =
             "Position FRONT inside the frame";
@@ -792,10 +1223,37 @@ function updateInstruction() {
         instruction.textContent =
             "Capture BACK";
 
+        pageInfo.textContent =
+            `Page ${pageNumber} • Back`;
+
         statusText.textContent =
             "Position BACK inside the frame";
 
     }
+
+}
+
+
+/* =========================================================
+   GET GUIDE RECTANGLE
+========================================================= */
+
+function getGuideRect() {
+
+    const rect =
+        guide.getBoundingClientRect();
+
+    return {
+
+        left: rect.left,
+
+        top: rect.top,
+
+        width: rect.width,
+
+        height: rect.height
+
+    };
 
 }
 
@@ -810,9 +1268,12 @@ captureButton.addEventListener(
 );
 
 
-function capturePhoto() {
+async function capturePhoto() {
 
-    if (!video.videoWidth || !video.videoHeight) {
+    if (
+        !video.videoWidth ||
+        !video.videoHeight
+    ) {
 
         showMessage(
             "Camera Not Ready",
@@ -820,173 +1281,360 @@ function capturePhoto() {
         );
 
         return;
+
     }
 
-
-    /*
-      Capture at the camera's REAL resolution.
-      This avoids blurry screenshots.
-    */
-
-    const sourceWidth =
-        video.videoWidth;
-
-    const sourceHeight =
-        video.videoHeight;
-
-
-    /*
-      Center crop using credit-card ratio.
-
-      ISO/IEC 7810 ID-1 ratio:
-
-      85.60 / 53.98 = 1.586
-    */
-
-    const targetRatio =
-        1.586;
-
-
-    let cropWidth;
-    let cropHeight;
 
     if (
-        sourceWidth / sourceHeight
-        >
-        targetRatio
+        captureButton.disabled
     ) {
 
-        cropHeight =
-            sourceHeight;
-
-        cropWidth =
-            sourceHeight * targetRatio;
-
-    } else {
-
-        cropWidth =
-            sourceWidth;
-
-        cropHeight =
-            sourceWidth / targetRatio;
+        return;
 
     }
 
 
-    const sx =
-        (sourceWidth - cropWidth) / 2;
-
-    const sy =
-        (sourceHeight - cropHeight) / 2;
+    captureButton.disabled =
+        true;
 
 
-    /*
-      High resolution output.
-    */
+    try {
 
-    const outputWidth = 1712;
-    const outputHeight = 1079;
+        /*
+          We capture the actual
+          camera resolution.
+        */
 
+        const sourceWidth =
+            video.videoWidth;
 
-    canvas.width =
-        outputWidth;
-
-    canvas.height =
-        outputHeight;
-
-
-    const ctx =
-        canvas.getContext("2d");
+        const sourceHeight =
+            video.videoHeight;
 
 
-    /*
-      If front camera is used,
-      mirror the image.
-    */
+        /*
+          Camera/video is displayed with
+          object-fit: cover.
 
-    if (facingMode === "user") {
+          Therefore we calculate exactly
+          which part of the camera frame
+          is visible on the screen.
+        */
 
-        ctx.translate(
-            outputWidth,
+        const videoRect =
+            video.getBoundingClientRect();
+
+
+        const scale =
+            Math.max(
+
+                videoRect.width /
+                    sourceWidth,
+
+                videoRect.height /
+                    sourceHeight
+
+            );
+
+
+        const displayedWidth =
+            sourceWidth * scale;
+
+        const displayedHeight =
+            sourceHeight * scale;
+
+
+        const videoOffsetX =
+            (
+                displayedWidth -
+                videoRect.width
+            ) / 2;
+
+
+        const videoOffsetY =
+            (
+                displayedHeight -
+                videoRect.height
+            ) / 2;
+
+
+        const guideRect =
+            getGuideRect();
+
+
+        /*
+          Guide coordinates relative
+          to video element.
+        */
+
+        const guideX =
+            guideRect.left -
+            videoRect.left;
+
+        const guideY =
+            guideRect.top -
+            videoRect.top;
+
+
+        /*
+          Convert screen pixels back
+          to actual camera pixels.
+        */
+
+        let sx =
+            (
+                guideX +
+                videoOffsetX
+            ) / scale;
+
+
+        let sy =
+            (
+                guideY +
+                videoOffsetY
+            ) / scale;
+
+
+        let sw =
+            guideRect.width /
+            scale;
+
+
+        let sh =
+            guideRect.height /
+            scale;
+
+
+        /*
+          Keep crop inside source.
+        */
+
+        sx =
+            Math.max(
+                0,
+                Math.min(
+                    sx,
+                    sourceWidth - 1
+                )
+            );
+
+        sy =
+            Math.max(
+                0,
+                Math.min(
+                    sy,
+                    sourceHeight - 1
+                )
+            );
+
+        sw =
+            Math.min(
+                sw,
+                sourceWidth - sx
+            );
+
+        sh =
+            Math.min(
+                sh,
+                sourceHeight - sy
+            );
+
+
+        /*
+          High quality output.
+
+          Keep the camera crop ratio.
+        */
+
+        const outputWidth =
+            1712;
+
+        const outputHeight =
+            Math.round(
+                outputWidth *
+                sh /
+                sw
+            );
+
+
+        canvas.width =
+            outputWidth;
+
+        canvas.height =
+            outputHeight;
+
+
+        const ctx =
+            canvas.getContext(
+                "2d",
+                {
+                    alpha: false
+                }
+            );
+
+
+        /*
+          Reset transform.
+        */
+
+        ctx.setTransform(
+            1,
+            0,
+            0,
+            1,
+            0,
             0
         );
 
-        ctx.scale(-1, 1);
-
-    }
-
-
-    ctx.drawImage(
-
-        video,
-
-        sx,
-        sy,
-        cropWidth,
-        cropHeight,
-
-        0,
-        0,
-        outputWidth,
-        outputHeight
-
-    );
-
-
-    const image =
-        canvas.toDataURL(
-            "image/jpeg",
-            0.95
-        );
-
-
-    if (currentSide === "front") {
-
-        currentFront = image;
-
-        currentSide = "back";
-
-        updateInstruction();
 
         /*
-          Small visual confirmation.
+          Mirror front camera only.
         */
 
-        flashScreen();
+        if (
+            facingMode ===
+            "user"
+        ) {
 
-    } else {
-
-        if (!currentFront) {
-
-            showMessage(
-                "Error",
-                "Front image is missing."
+            ctx.translate(
+                outputWidth,
+                0
             );
 
-            return;
+            ctx.scale(
+                -1,
+                1
+            );
+
         }
 
 
-        pagesData.push({
+        /*
+          Draw only what is inside
+          the document guide.
+        */
 
-            front: currentFront,
+        ctx.drawImage(
 
-            back: image
+            video,
 
-        });
+            sx,
+            sy,
+            sw,
+            sh,
+
+            0,
+            0,
+            outputWidth,
+            outputHeight
+
+        );
 
 
-        currentFront = null;
+        /*
+          JPEG.
+        */
 
-        currentSide = "front";
+        const image =
+            canvas.toDataURL(
+                "image/jpeg",
+                0.94
+            );
 
-        updateInstruction();
 
-        updatePageCount();
+        /*
+          FRONT
+        */
 
-        renderPages();
+        if (
+            currentSide ===
+            "front"
+        ) {
 
-        flashScreen();
+            currentFront =
+                image;
+
+            currentSide =
+                "back";
+
+
+            updateInstruction();
+
+            flashScreen();
+
+
+            statusText.textContent =
+                "Front captured. Now capture BACK.";
+
+
+        }
+
+        /*
+          BACK
+        */
+
+        else {
+
+            if (!currentFront) {
+
+                throw new Error(
+                    "Front image is missing."
+                );
+
+            }
+
+
+            pagesData.push({
+
+                front:
+                    currentFront,
+
+                back:
+                    image
+
+            });
+
+
+            currentFront =
+                null;
+
+            currentSide =
+                "front";
+
+
+            updatePageCount();
+
+            renderPages();
+
+            updateInstruction();
+
+            flashScreen();
+
+
+            statusText.textContent =
+                "Page completed. Capture FRONT for the next page.";
+
+        }
+
+
+    } catch (error) {
+
+        console.error(
+            "CAPTURE ERROR:",
+            error
+        );
+
+
+        showMessage(
+            "Capture Failed",
+            "The image could not be captured. Please try again."
+        );
+
+
+    } finally {
+
+        captureButton.disabled =
+            false;
 
     }
 
@@ -999,32 +1647,19 @@ function capturePhoto() {
 
 function flashScreen() {
 
-    const flash =
-        document.createElement("div");
+    flash.style.opacity =
+        "0.85";
 
-    flash.style.position = "fixed";
-    flash.style.inset = "0";
-    flash.style.background = "white";
-    flash.style.opacity = "0.85";
-    flash.style.zIndex = "10000";
-    flash.style.pointerEvents = "none";
 
-    document.body.appendChild(flash);
+    setTimeout(
+        () => {
 
-    setTimeout(() => {
+            flash.style.opacity =
+                "0";
 
-        flash.style.opacity = "0";
-
-        flash.style.transition =
-            "opacity .2s";
-
-    }, 50);
-
-    setTimeout(() => {
-
-        flash.remove();
-
-    }, 300);
+        },
+        70
+    );
 
 }
 
@@ -1047,21 +1682,42 @@ function updatePageCount() {
 
 function renderPages() {
 
-    pagesContainer.innerHTML = "";
+    pagesContainer.innerHTML =
+        "";
 
-    if (pagesData.length === 0) {
+
+    if (
+        pagesData.length === 0
+    ) {
 
         pagesContainer.innerHTML = `
-            <div style="
-                text-align:center;
-                padding:40px;
-                color:#777;
-            ">
-                No pages scanned yet.
+
+            <div class="empty">
+
+                <div style="font-size:40px">
+                    📄
+                </div>
+
+                <div style="
+                    margin-top:10px;
+                    font-weight:bold;
+                ">
+                    No pages scanned yet
+                </div>
+
+                <div style="
+                    margin-top:6px;
+                ">
+                    Capture Front and Back
+                    to create your first page.
+                </div>
+
             </div>
+
         `;
 
         return;
+
     }
 
 
@@ -1069,10 +1725,14 @@ function renderPages() {
         (page, index) => {
 
             const element =
-                document.createElement("div");
+                document.createElement(
+                    "div"
+                );
+
 
             element.className =
                 "page";
+
 
             element.innerHTML = `
 
@@ -1110,12 +1770,25 @@ function renderPages() {
 
                 <button
                     class="deletePage"
-                    onclick="deletePage(${index})">
+                    data-index="${index}">
 
                     🗑 Delete Page
 
                 </button>
+
             `;
+
+
+            const deleteButton =
+                element.querySelector(
+                    ".deletePage"
+                );
+
+
+            deleteButton.addEventListener(
+                "click",
+                () => deletePage(index)
+            );
 
 
             pagesContainer.appendChild(
@@ -1141,6 +1814,7 @@ function deletePage(index) {
     ) {
 
         return;
+
     }
 
 
@@ -1149,9 +1823,12 @@ function deletePage(index) {
         1
     );
 
+
     updatePageCount();
 
     renderPages();
+
+    updateInstruction();
 
 }
 
@@ -1165,19 +1842,42 @@ function openPages() {
     pagesPanel.style.display =
         "block";
 
+
     renderPages();
 
 }
 
 
 /* =========================================================
-   CONTINUE
+   CONTINUE SCANNING
 ========================================================= */
 
 function continueScanning() {
 
     pagesPanel.style.display =
         "none";
+
+
+    updateInstruction();
+
+
+    /*
+      Make sure camera is running.
+    */
+
+    if (
+        !stream ||
+        stream.getVideoTracks()
+            .some(
+                track =>
+                    track.readyState ===
+                    "live"
+            )
+    ) {
+
+        startCamera();
+
+    }
 
 }
 
@@ -1188,11 +1888,17 @@ function continueScanning() {
 
 async function createPDF() {
 
-    if (pagesData.length === 0) {
+    /*
+      No pages.
+    */
+
+    if (
+        pagesData.length === 0
+    ) {
 
         showMessage(
             "No Pages",
-            "Please scan at least one page before creating the PDF."
+            "Please scan at least one complete page."
         );
 
         return;
@@ -1201,15 +1907,16 @@ async function createPDF() {
 
 
     /*
-      If user has captured FRONT but
-      hasn't captured BACK, prevent PDF.
+      Incomplete front.
     */
 
-    if (currentFront) {
+    if (
+        currentFront
+    ) {
 
         showMessage(
             "Incomplete Page",
-            "You captured a FRONT image but not the BACK image. Please capture the BACK first."
+            "The current page has a FRONT image but no BACK image. Capture the BACK before creating the PDF."
         );
 
         return;
@@ -1220,34 +1927,54 @@ async function createPDF() {
     processing.style.display =
         "flex";
 
-    processingText.textContent =
-        "Creating PDF...";
+
+    pdfButton.disabled =
+        true;
 
 
     try {
 
+        if (
+            !window.jspdf ||
+            !window.jspdf.jsPDF
+        ) {
+
+            throw new Error(
+                "jsPDF library was not loaded."
+            );
+
+        }
+
+
         const {
             jsPDF
-        } = window.jspdf;
+        } =
+            window.jspdf;
 
 
         /*
-          A4 PDF.
+          A4 landscape.
 
-          Landscape is used because
-          each page contains two images.
+          Each PDF page contains:
+
+          LEFT  = FRONT
+          RIGHT = BACK
         */
 
         const pdf =
             new jsPDF({
 
-                orientation: "landscape",
+                orientation:
+                    "landscape",
 
-                unit: "mm",
+                unit:
+                    "mm",
 
-                format: "a4",
+                format:
+                    "a4",
 
-                compress: true
+                compress:
+                    true
 
             });
 
@@ -1259,10 +1986,6 @@ async function createPDF() {
             210;
 
 
-        /*
-          Margins
-        */
-
         const margin =
             12;
 
@@ -1271,10 +1994,8 @@ async function createPDF() {
 
 
         const availableWidth =
-            pdfWidth
-            -
-            margin * 2
-            -
+            pdfWidth -
+            margin * 2 -
             gap;
 
 
@@ -1282,16 +2003,15 @@ async function createPDF() {
             availableWidth / 2;
 
 
-        /*
-          Credit-card ratio.
-        */
-
         const imageHeight =
             imageWidth / 1.586;
 
 
         const y =
-            (pdfHeight - imageHeight) / 2;
+            (
+                pdfHeight -
+                imageHeight
+            ) / 2;
 
 
         for (
@@ -1300,7 +2020,9 @@ async function createPDF() {
             i++
         ) {
 
-            if (i > 0) {
+            if (
+                i > 0
+            ) {
 
                 pdf.addPage();
 
@@ -1311,17 +2033,13 @@ async function createPDF() {
                 `Creating PDF page ${i + 1} of ${pagesData.length}...`;
 
 
-            const page =
-                pagesData[i];
-
-
             /*
               FRONT
             */
 
             pdf.addImage(
 
-                page.front,
+                pagesData[i].front,
 
                 "JPEG",
 
@@ -1333,9 +2051,9 @@ async function createPDF() {
 
                 imageHeight,
 
-                undefined,
+                "front-" + i,
 
-                "FAST"
+                "MEDIUM"
 
             );
 
@@ -1346,15 +2064,13 @@ async function createPDF() {
 
             pdf.addImage(
 
-                page.back,
+                pagesData[i].back,
 
                 "JPEG",
 
-                margin
-                +
-                imageWidth
-                +
-                gap,
+                margin +
+                    imageWidth +
+                    gap,
 
                 y,
 
@@ -1362,18 +2078,26 @@ async function createPDF() {
 
                 imageHeight,
 
-                undefined,
+                "back-" + i,
 
-                "FAST"
+                "MEDIUM"
 
             );
 
 
             /*
-              Labels
+              Small labels.
             */
 
-            pdf.setFontSize(8);
+            pdf.setFont(
+                "helvetica",
+                "bold"
+            );
+
+            pdf.setFontSize(
+                8
+            );
+
 
             pdf.text(
                 "FRONT",
@@ -1381,33 +2105,61 @@ async function createPDF() {
                 y - 3
             );
 
+
             pdf.text(
                 "BACK",
-                margin
-                +
-                imageWidth
-                +
-                gap,
+                margin +
+                    imageWidth +
+                    gap,
                 y - 3
             );
 
         }
 
 
+        processingText.textContent =
+            "Preparing download...";
+
+
         /*
-          Save.
+          Create Blob.
+
+          This is more reliable than
+          relying only on pdf.save().
         */
+
+        const blob =
+            pdf.output(
+                "blob"
+            );
+
+
+        if (
+            !blob ||
+            blob.size === 0
+        ) {
+
+            throw new Error(
+                "PDF blob is empty."
+            );
+
+        }
+
 
         const filename =
             "scanned-document-" +
-            new Date()
-                .toISOString()
-                .slice(0,10)
-            +
+            getDateString() +
             ".pdf";
 
 
-        pdf.save(filename);
+        /*
+          Download.
+        */
+
+        downloadBlob(
+            blob,
+            filename
+        );
 
 
         processing.style.display =
@@ -1421,15 +2173,121 @@ async function createPDF() {
             error
         );
 
+
         processing.style.display =
             "none";
 
+
         showMessage(
             "PDF Creation Failed",
-            "The PDF could not be created. Please try again."
+            "The PDF could not be created. Please try again. If the problem continues, reduce the number of scanned pages."
         );
 
+
+    } finally {
+
+        pdfButton.disabled =
+            false;
+
     }
+
+}
+
+
+/* =========================================================
+   DATE
+========================================================= */
+
+function getDateString() {
+
+    const now =
+        new Date();
+
+
+    const year =
+        now.getFullYear();
+
+
+    const month =
+        String(
+            now.getMonth() + 1
+        ).padStart(
+            2,
+            "0"
+        );
+
+
+    const day =
+        String(
+            now.getDate()
+        ).padStart(
+            2,
+            "0"
+        );
+
+
+    return (
+        year +
+        "-" +
+        month +
+        "-" +
+        day
+    );
+
+}
+
+
+/* =========================================================
+   DOWNLOAD BLOB
+========================================================= */
+
+function downloadBlob(
+    blob,
+    filename
+) {
+
+    const url =
+        URL.createObjectURL(
+            blob
+        );
+
+
+    const link =
+        document.createElement(
+            "a"
+        );
+
+
+    link.href =
+        url;
+
+    link.download =
+        filename;
+
+    link.style.display =
+        "none";
+
+
+    document.body.appendChild(
+        link
+    );
+
+
+    link.click();
+
+
+    setTimeout(
+        () => {
+
+            link.remove();
+
+            URL.revokeObjectURL(
+                url
+            );
+
+        },
+        1000
+    );
 
 }
 
@@ -1463,8 +2321,42 @@ function closeMessage() {
 }
 
 
+messageOK.addEventListener(
+    "click",
+    closeMessage
+);
+
+
 /* =========================================================
-   INITIALIZE
+   BUTTON EVENTS
+========================================================= */
+
+cameraButton.addEventListener(
+    "click",
+    switchCamera
+);
+
+
+pagesButton.addEventListener(
+    "click",
+    openPages
+);
+
+
+continueButton.addEventListener(
+    "click",
+    continueScanning
+);
+
+
+pdfButton.addEventListener(
+    "click",
+    createPDF
+);
+
+
+/* =========================================================
+   START
 ========================================================= */
 
 window.addEventListener(
@@ -1475,6 +2367,8 @@ window.addEventListener(
 
         updatePageCount();
 
+        renderPages();
+
         await startCamera();
 
     }
@@ -1482,7 +2376,7 @@ window.addEventListener(
 
 
 /* =========================================================
-   STOP CAMERA WHEN LEAVING
+   STOP CAMERA
 ========================================================= */
 
 window.addEventListener(
