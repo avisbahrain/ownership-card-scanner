@@ -1,22 +1,5 @@
 /* =========================================================
-   ID / CREDIT CARD DOCUMENT SCANNER
-   =========================================================
-
-   Features:
-
-   - Front / Back workflow
-   - Unlimited pages
-   - Credit card aspect ratio
-   - OpenCV edge detection
-   - Perspective correction
-   - PDF generation
-   - Browser-only processing
-
-========================================================= */
-
-
-/* =========================================================
-   STATE
+   CARD SCANNER
 ========================================================= */
 
 let pages = [];
@@ -40,172 +23,108 @@ let opencvReady = false;
 ========================================================= */
 
 const startScreen =
-  document.getElementById(
-    "startScreen"
-  );
+  document.getElementById("startScreen");
 
 const cameraScreen =
-  document.getElementById(
-    "cameraScreen"
-  );
+  document.getElementById("cameraScreen");
 
 const previewScreen =
-  document.getElementById(
-    "previewScreen"
-  );
+  document.getElementById("previewScreen");
 
 const documentsScreen =
-  document.getElementById(
-    "documentsScreen"
-  );
+  document.getElementById("documentsScreen");
 
 
 const startBtn =
-  document.getElementById(
-    "startBtn"
-  );
-
+  document.getElementById("startBtn");
 
 const video =
-  document.getElementById(
-    "video"
-  );
-
+  document.getElementById("video");
 
 const captureBtn =
-  document.getElementById(
-    "captureBtn"
-  );
+  document.getElementById("captureBtn");
 
 const switchCameraBtn =
-  document.getElementById(
-    "switchCameraBtn"
-  );
+  document.getElementById("switchCameraBtn");
 
 const cancelCameraBtn =
-  document.getElementById(
-    "cancelCameraBtn"
-  );
+  document.getElementById("cancelCameraBtn");
 
 
 const pageLabel =
-  document.getElementById(
-    "pageLabel"
-  );
+  document.getElementById("pageLabel");
 
 const sideLabel =
-  document.getElementById(
-    "sideLabel"
-  );
-
+  document.getElementById("sideLabel");
 
 const instructionTitle =
-  document.getElementById(
-    "instructionTitle"
-  );
+  document.getElementById("instructionTitle");
 
 const instructionText =
-  document.getElementById(
-    "instructionText"
-  );
+  document.getElementById("instructionText");
 
 
 const edgeStatus =
-  document.getElementById(
-    "edgeStatus"
-  );
-
+  document.getElementById("edgeStatus");
 
 const documentGuide =
-  document.getElementById(
-    "documentGuide"
-  );
+  document.getElementById("documentGuide");
 
 
 const frontPreview =
-  document.getElementById(
-    "frontPreview"
-  );
+  document.getElementById("frontPreview");
 
 const backPreview =
-  document.getElementById(
-    "backPreview"
-  );
+  document.getElementById("backPreview");
 
 
 const retakeFrontBtn =
-  document.getElementById(
-    "retakeFrontBtn"
-  );
+  document.getElementById("retakeFrontBtn");
 
 const retakeBackBtn =
-  document.getElementById(
-    "retakeBackBtn"
-  );
+  document.getElementById("retakeBackBtn");
 
 
 const addPageBtn =
-  document.getElementById(
-    "addPageBtn"
-  );
+  document.getElementById("addPageBtn");
 
 const finishBtn =
-  document.getElementById(
-    "finishBtn"
-  );
+  document.getElementById("finishBtn");
 
 
 const pagesList =
-  document.getElementById(
-    "pagesList"
-  );
+  document.getElementById("pagesList");
 
 const pageCount =
-  document.getElementById(
-    "pageCount"
-  );
+  document.getElementById("pageCount");
 
 
 const addAnotherBtn =
-  document.getElementById(
-    "addAnotherBtn"
-  );
+  document.getElementById("addAnotherBtn");
 
 const downloadPdfBtn =
-  document.getElementById(
-    "downloadPdfBtn"
-  );
+  document.getElementById("downloadPdfBtn");
 
 const clearAllBtn =
-  document.getElementById(
-    "clearAllBtn"
-  );
+  document.getElementById("clearAllBtn");
 
 
 const captureCanvas =
-  document.getElementById(
-    "captureCanvas"
-  );
+  document.getElementById("captureCanvas");
 
 const processingCanvas =
-  document.getElementById(
-    "processingCanvas"
-  );
+  document.getElementById("processingCanvas");
 
 
 const processingModal =
-  document.getElementById(
-    "processingModal"
-  );
+  document.getElementById("processingModal");
 
 const processingText =
-  document.getElementById(
-    "processingText"
-  );
+  document.getElementById("processingText");
 
 
 /* =========================================================
-   OPENCV READY
+   OPENCV
 ========================================================= */
 
 function checkOpenCV() {
@@ -217,12 +136,12 @@ function checkOpenCV() {
 
     opencvReady = true;
 
-    edgeStatus.textContent =
-      "Edge detection ready";
+    console.log(
+      "OpenCV ready"
+    );
 
     return;
   }
-
 
   setTimeout(
     checkOpenCV,
@@ -244,134 +163,17 @@ function showScreen(screen) {
     cameraScreen,
     previewScreen,
     documentsScreen
-
   ].forEach(
     element => {
-
       element.classList.remove(
         "active"
       );
-
     }
   );
-
 
   screen.classList.add(
     "active"
   );
-}
-
-
-/* =========================================================
-   CAMERA
-========================================================= */
-
-async function startCamera() {
-
-  stopCamera();
-
-
-  if (
-    !navigator.mediaDevices ||
-    !navigator.mediaDevices.getUserMedia
-  ) {
-
-    alert(
-      "Camera is not supported by this browser."
-    );
-
-    return;
-  }
-
-
-  try {
-
-    const constraints = {
-
-      audio: false,
-
-      video: {
-
-        facingMode:
-          usingFrontCamera
-            ? "user"
-            : {
-                ideal:
-                  "environment"
-              },
-
-        width: {
-          ideal: 1920
-        },
-
-        height: {
-          ideal: 1080
-        },
-
-        frameRate: {
-          ideal: 30
-        }
-
-      }
-
-    };
-
-
-    cameraStream =
-      await navigator.mediaDevices
-        .getUserMedia(
-          constraints
-        );
-
-
-    video.srcObject =
-      cameraStream;
-
-
-    await video.play();
-
-
-    updateCameraUI();
-
-  } catch (error) {
-
-    console.error(error);
-
-
-    alert(
-      "Camera access failed.\n\n" +
-
-      "Please allow camera permission " +
-
-      "and make sure the website is running " +
-
-      "on HTTPS."
-    );
-  }
-}
-
-
-/* =========================================================
-   STOP CAMERA
-========================================================= */
-
-function stopCamera() {
-
-  if (!cameraStream) {
-    return;
-  }
-
-
-  cameraStream
-    .getTracks()
-    .forEach(
-      track => track.stop()
-    );
-
-
-  cameraStream = null;
-
-  video.srcObject = null;
 }
 
 
@@ -390,17 +192,264 @@ startBtn.addEventListener(
       back: null
     };
 
-    currentSide =
-      "front";
+    currentSide = "front";
 
+    updateCameraUI();
 
     showScreen(
       cameraScreen
     );
 
+    await startCamera();
+  }
+);
 
-    updateCameraUI();
 
+/* =========================================================
+   CAMERA
+========================================================= */
+
+async function startCamera() {
+
+  stopCamera();
+
+  if (
+    !navigator.mediaDevices ||
+    !navigator.mediaDevices.getUserMedia
+  ) {
+
+    alert(
+      "Camera is not available.\n\n" +
+      "Open this website using HTTPS."
+    );
+
+    return;
+  }
+
+
+  try {
+
+    /*
+     * Simple constraints.
+     *
+     * Rear camera is used by default.
+     */
+
+    const constraints = {
+
+      audio: false,
+
+      video: {
+
+        facingMode:
+          usingFrontCamera
+            ? "user"
+            : "environment",
+
+        width: {
+          ideal: 1920
+        },
+
+        height: {
+          ideal: 1080
+        }
+
+      }
+
+    };
+
+
+    cameraStream =
+      await navigator.mediaDevices
+        .getUserMedia(
+          constraints
+        );
+
+
+    video.srcObject =
+      cameraStream;
+
+
+    video.muted = true;
+
+    video.setAttribute(
+      "playsinline",
+      ""
+    );
+
+
+    /*
+     * Wait for video.
+     */
+
+    await new Promise(
+      resolve => {
+
+        if (
+          video.readyState >= 2
+        ) {
+
+          resolve();
+
+          return;
+        }
+
+
+        video.onloadedmetadata =
+          () => {
+
+            resolve();
+
+          };
+
+      }
+    );
+
+
+    await video.play();
+
+
+    edgeStatus.textContent =
+      "Position card inside the frame";
+
+
+    console.log(
+      "Camera opened successfully"
+    );
+
+
+  } catch (error) {
+
+    console.error(
+      "Camera error:",
+      error
+    );
+
+
+    handleCameraError(
+      error
+    );
+  }
+}
+
+
+/* =========================================================
+   CAMERA ERROR
+========================================================= */
+
+function handleCameraError(
+  error
+) {
+
+  let message =
+    "Unable to open camera.\n\n";
+
+
+  switch (
+    error.name
+  ) {
+
+    case "NotAllowedError":
+
+      message +=
+        "Camera permission was denied.\n\n" +
+
+        "Please allow camera access " +
+        "in your browser settings.";
+
+      break;
+
+
+    case "NotFoundError":
+
+      message +=
+        "No camera was found.";
+
+      break;
+
+
+    case "NotReadableError":
+
+      message +=
+        "The camera is already being used " +
+        "by another application.";
+
+      break;
+
+
+    case "OverconstrainedError":
+
+      message +=
+        "This camera does not support " +
+        "the requested settings.";
+
+      break;
+
+
+    case "SecurityError":
+
+      message +=
+        "Camera access was blocked by " +
+        "the browser.";
+
+      break;
+
+
+    default:
+
+      message +=
+        error.message ||
+        "Unknown camera error.";
+
+      break;
+  }
+
+
+  alert(message);
+}
+
+
+/* =========================================================
+   STOP CAMERA
+========================================================= */
+
+function stopCamera() {
+
+  if (
+    !cameraStream
+  ) {
+
+    return;
+  }
+
+
+  cameraStream
+    .getTracks()
+    .forEach(
+      track => {
+
+        track.stop();
+
+      }
+    );
+
+
+  cameraStream = null;
+
+  video.srcObject = null;
+}
+
+
+/* =========================================================
+   SWITCH CAMERA
+========================================================= */
+
+switchCameraBtn.addEventListener(
+  "click",
+  async () => {
+
+    usingFrontCamera =
+      !usingFrontCamera;
 
     await startCamera();
   }
@@ -413,12 +462,12 @@ startBtn.addEventListener(
 
 function updateCameraUI() {
 
-  const pageNumber =
+  const number =
     pages.length + 1;
 
 
   pageLabel.textContent =
-    `Page ${pageNumber}`;
+    `Page ${number}`;
 
 
   if (
@@ -445,25 +494,9 @@ function updateCameraUI() {
 
     instructionText.textContent =
       "Place the entire card inside the frame";
+
   }
 }
-
-
-/* =========================================================
-   SWITCH CAMERA
-========================================================= */
-
-switchCameraBtn.addEventListener(
-  "click",
-  async () => {
-
-    usingFrontCamera =
-      !usingFrontCamera;
-
-
-    await startCamera();
-  }
-);
 
 
 /* =========================================================
@@ -479,11 +512,12 @@ captureBtn.addEventListener(
 async function capturePhoto() {
 
   if (
-    !video.videoWidth
+    !video.videoWidth ||
+    !video.videoHeight
   ) {
 
     alert(
-      "Camera is not ready."
+      "Camera is not ready yet."
     );
 
     return;
@@ -491,7 +525,7 @@ async function capturePhoto() {
 
 
   showProcessing(
-    "Capturing card..."
+    "Capturing..."
   );
 
 
@@ -509,15 +543,13 @@ async function capturePhoto() {
       currentPage.front =
         image;
 
-
       currentSide =
         "back";
 
 
-      updateCameraUI();
-
-
       hideProcessing();
+
+      updateCameraUI();
 
 
       edgeStatus.textContent =
@@ -528,23 +560,15 @@ async function capturePhoto() {
     }
 
 
-    if (
-      currentSide ===
-      "back"
-    ) {
-
-      currentPage.back =
-        image;
+    currentPage.back =
+      image;
 
 
-      stopCamera();
+    stopCamera();
 
+    hideProcessing();
 
-      hideProcessing();
-
-
-      showPreview();
-    }
+    showPreview();
 
   } catch (error) {
 
@@ -552,17 +576,15 @@ async function capturePhoto() {
 
     hideProcessing();
 
-
     alert(
-      "Could not process the card.\n\n" +
-      "Please try again."
+      "Could not capture the card."
     );
   }
 }
 
 
 /* =========================================================
-   CAPTURE + PROCESS
+   CAPTURE IMAGE
 ========================================================= */
 
 async function captureAndProcess() {
@@ -575,7 +597,8 @@ async function captureAndProcess() {
 
 
   /*
-   * Limit huge camera images.
+   * Don't create extremely
+   * large browser images.
    */
 
   const maxWidth =
@@ -583,16 +606,16 @@ async function captureAndProcess() {
 
 
   if (
-    width > maxWidth
+    width >
+    maxWidth
   ) {
 
     const ratio =
-      maxWidth / width;
-
+      maxWidth /
+      width;
 
     width =
       maxWidth;
-
 
     height =
       Math.round(
@@ -610,38 +633,13 @@ async function captureAndProcess() {
 
   const context =
     captureCanvas.getContext(
-      "2d",
-      {
-        willReadFrequently: true
-      }
+      "2d"
     );
 
 
   /*
-   * IMPORTANT:
-
-   * If front camera is mirrored,
-   * correct the captured image.
+   * Draw normally.
    */
-
-  if (
-    usingFrontCamera
-  ) {
-
-    context.save();
-
-    context.translate(
-      width,
-      0
-    );
-
-    context.scale(
-      -1,
-      1
-    );
-
-  }
-
 
   context.drawImage(
     video,
@@ -652,23 +650,16 @@ async function captureAndProcess() {
   );
 
 
-  if (
-    usingFrontCamera
-  ) {
-
-    context.restore();
-  }
-
-
   const original =
     captureCanvas.toDataURL(
       "image/jpeg",
-      0.94
+      0.95
     );
 
 
   /*
-   * OpenCV may not be loaded yet.
+   * If OpenCV is unavailable,
+   * use the normal image.
    */
 
   if (
@@ -683,19 +674,16 @@ async function captureAndProcess() {
     "Detecting card edges...";
 
 
-  const processed =
-    await detectCard(
+  const result =
+    detectCard(
       captureCanvas
     );
 
 
-  /*
-   * If detection fails,
-   * keep original image.
-   */
-
-  return processed ||
-    original;
+  return (
+    result ||
+    original
+  );
 }
 
 
@@ -703,740 +691,743 @@ async function captureAndProcess() {
    DETECT CARD
 ========================================================= */
 
-async function detectCard(
+function detectCard(
   canvas
 ) {
 
-  return new Promise(
-    resolve => {
+  try {
 
-      try {
-
-        const src =
-          cv.imread(canvas);
-
-
-        if (
-          !src ||
-          src.empty()
-        ) {
-
-          resolve(null);
-
-          return;
-        }
+    const src =
+      cv.imread(
+        canvas
+      );
 
 
-        /*
-         * Smaller processing image
-         */
+    if (
+      !src ||
+      src.empty()
+    ) {
 
-        const maxDimension =
-          1400;
-
-
-        let scale =
-          1;
+      return null;
+    }
 
 
-        if (
-          Math.max(
-            src.cols,
-            src.rows
-          ) >
-          maxDimension
-        ) {
+    /*
+     * Resize for processing.
+     */
 
-          scale =
-            maxDimension /
-            Math.max(
-              src.cols,
-              src.rows
-            );
-        }
+    const maxDimension =
+      1400;
 
 
-        const small =
-          new cv.Mat();
+    let scale = 1;
 
 
-        cv.resize(
-          src,
-          small,
-          new cv.Size(
-            Math.round(
-              src.cols * scale
-            ),
+    if (
+      Math.max(
+        src.cols,
+        src.rows
+      ) >
+      maxDimension
+    ) {
 
-            Math.round(
-              src.rows * scale
-            )
-          ),
-          0,
-          0,
-          cv.INTER_AREA
+      scale =
+        maxDimension /
+        Math.max(
+          src.cols,
+          src.rows
+        );
+    }
+
+
+    const small =
+      new cv.Mat();
+
+
+    cv.resize(
+      src,
+      small,
+
+      new cv.Size(
+        Math.round(
+          src.cols *
+          scale
+        ),
+
+        Math.round(
+          src.rows *
+          scale
+        )
+      ),
+
+      0,
+      0,
+
+      cv.INTER_AREA
+    );
+
+
+    /*
+     * Gray
+     */
+
+    const gray =
+      new cv.Mat();
+
+
+    cv.cvtColor(
+      small,
+      gray,
+      cv.COLOR_RGBA2GRAY
+    );
+
+
+    /*
+     * Blur
+     */
+
+    const blurred =
+      new cv.Mat();
+
+
+    cv.GaussianBlur(
+      gray,
+      blurred,
+
+      new cv.Size(
+        5,
+        5
+      ),
+
+      0
+    );
+
+
+    /*
+     * Edge detection
+     */
+
+    const edges =
+      new cv.Mat();
+
+
+    cv.Canny(
+      blurred,
+      edges,
+      60,
+      180
+    );
+
+
+    /*
+     * Find contours
+     */
+
+    const contours =
+      new cv.MatVector();
+
+
+    const hierarchy =
+      new cv.Mat();
+
+
+    cv.findContours(
+      edges,
+      contours,
+      hierarchy,
+
+      cv.RETR_LIST,
+
+      cv.CHAIN_APPROX_SIMPLE
+    );
+
+
+    const imageArea =
+      small.cols *
+      small.rows;
+
+
+    const targetRatio =
+      1.586;
+
+
+    let bestContour =
+      null;
+
+    let bestScore = 0;
+
+
+    for (
+      let i = 0;
+      i < contours.size();
+      i++
+    ) {
+
+      const contour =
+        contours.get(i);
+
+
+      const area =
+        cv.contourArea(
+          contour
         );
 
 
-        /*
-         * Grayscale
-         */
+      /*
+       * Ignore small objects.
+       */
 
-        const gray =
-          new cv.Mat();
+      if (
+        area <
+        imageArea * 0.04
+      ) {
+
+        contour.delete();
+
+        continue;
+      }
 
 
-        cv.cvtColor(
-          small,
-          gray,
-          cv.COLOR_RGBA2GRAY
+      const perimeter =
+        cv.arcLength(
+          contour,
+          true
         );
 
 
-        /*
-         * Blur
-         */
-
-        const blurred =
-          new cv.Mat();
+      const approx =
+        new cv.Mat();
 
 
-        cv.GaussianBlur(
-          gray,
-          blurred,
-          new cv.Size(
-            5,
-            5
-          ),
-          0
-        );
+      cv.approxPolyDP(
+        contour,
+        approx,
+
+        perimeter *
+        0.025,
+
+        true
+      );
 
 
-        /*
-         * Edges
-         */
+      if (
+        approx.rows === 4
+      ) {
 
-        const edges =
-          new cv.Mat();
-
-
-        cv.Canny(
-          blurred,
-          edges,
-          60,
-          180
-        );
-
-
-        /*
-         * Find contours
-         */
-
-        const contours =
-          new cv.MatVector();
-
-
-        const hierarchy =
-          new cv.Mat();
-
-
-        cv.findContours(
-          edges,
-          contours,
-          hierarchy,
-          cv.RETR_LIST,
-          cv.CHAIN_APPROX_SIMPLE
-        );
-
-
-        const imageArea =
-          small.cols *
-          small.rows;
-
-
-        let best =
-          null;
-
-        let bestScore =
-          0;
-
-
-        /*
-         * Credit-card ratio
-
-         * 85.60 / 53.98
-
-         * ≈ 1.586
-         */
-
-        const targetRatio =
-          1.586;
-
-
-        for (
-          let i = 0;
-          i < contours.size();
-          i++
-        ) {
-
-          const contour =
-            contours.get(i);
-
-
-          const area =
-            cv.contourArea(
-              contour
-            );
-
-
-          /*
-           * Ignore tiny shapes.
-           */
-
-          if (
-            area <
-            imageArea * 0.04
-          ) {
-
-            contour.delete();
-
-            continue;
-          }
-
-
-          const perimeter =
-            cv.arcLength(
-              contour,
-              true
-            );
-
-
-          const approx =
-            new cv.Mat();
-
-
-          cv.approxPolyDP(
-            contour,
-            approx,
-            0.025 *
-              perimeter,
-            true
+        const rect =
+          cv.boundingRect(
+            approx
           );
 
 
+        const ratio =
+          Math.max(
+            rect.width,
+            rect.height
+          ) /
+          Math.min(
+            rect.width,
+            rect.height
+          );
+
+
+        const ratioDifference =
+          Math.abs(
+            ratio -
+            targetRatio
+          );
+
+
+        /*
+         * Credit-card shape.
+         */
+
+        if (
+          ratioDifference <
+          0.50
+        ) {
+
+          const areaRatio =
+            area /
+            imageArea;
+
+
+          const ratioScore =
+            1 -
+            (
+              ratioDifference /
+              0.50
+            );
+
+
+          const score =
+            areaRatio *
+            0.65 +
+
+            ratioScore *
+            0.35;
+
+
           if (
-            approx.rows === 4
+            score >
+            bestScore
           ) {
 
-            const rect =
-              cv.boundingRect(
-                approx
-              );
-
-
-            const ratio =
-              Math.max(
-                rect.width,
-                rect.height
-              ) /
-              Math.min(
-                rect.width,
-                rect.height
-              );
-
-
-            /*
-             * How close to credit card ratio?
-             */
-
-            const ratioDifference =
-              Math.abs(
-                ratio -
-                targetRatio
-              );
-
-
-            /*
-             * Reject very bad ratios.
-             */
-
             if (
-              ratioDifference <
-              0.55
+              bestContour
             ) {
 
-              const areaRatio =
-                area /
-                imageArea;
+              bestContour.delete();
 
-
-              /*
-               * Prefer:
-
-               * - large object
-               * - correct ratio
-               */
-
-              const ratioScore =
-                Math.max(
-                  0,
-                  1 -
-                  ratioDifference /
-                  0.55
-                );
-
-
-              const score =
-                areaRatio *
-                0.65 +
-
-                ratioScore *
-                0.35;
-
-
-              if (
-                score >
-                bestScore
-              ) {
-
-                if (best) {
-                  best.delete();
-                }
-
-
-                best =
-                  approx;
-
-
-                bestScore =
-                  score;
-
-              } else {
-
-                approx.delete();
-              }
-
-            } else {
-
-              approx.delete();
             }
+
+
+            bestContour =
+              approx;
+
+            bestScore =
+              score;
 
           } else {
 
             approx.delete();
+
           }
 
+        } else {
 
-          contour.delete();
+          approx.delete();
+
         }
 
+      } else {
 
-        /*
-         * No card found.
-         */
+        approx.delete();
 
-        if (
-          !best
-        ) {
-
-          cleanup(
-            src,
-            small,
-            gray,
-            blurred,
-            edges,
-            contours,
-            hierarchy
-          );
-
-
-          documentGuide.classList.remove(
-            "detected"
-          );
-
-
-          edgeStatus.textContent =
-            "Edges not detected - tap to capture anyway";
-
-
-          resolve(null);
-
-          return;
-        }
-
-
-        /*
-         * Extract corners
-         */
-
-        const points =
-          getPoints(
-            best
-          );
-
-
-        best.delete();
-
-
-        if (
-          points.length !== 4
-        ) {
-
-          cleanup(
-            src,
-            small,
-            gray,
-            blurred,
-            edges,
-            contours,
-            hierarchy
-          );
-
-
-          resolve(null);
-
-          return;
-        }
-
-
-        /*
-         * Convert to original image coordinates
-         */
-
-        const originalPoints =
-          points.map(
-            point => ({
-              x:
-                point.x /
-                scale,
-
-              y:
-                point.y /
-                scale
-            })
-          );
-
-
-        /*
-         * Order corners
-         */
-
-        const ordered =
-          orderPoints(
-            originalPoints
-          );
-
-
-        /*
-         * Card dimensions
-         */
-
-        const width1 =
-          distance(
-            ordered.br,
-            ordered.bl
-          );
-
-        const width2 =
-          distance(
-            ordered.tr,
-            ordered.tl
-          );
-
-
-        const detectedWidth =
-          Math.max(
-            width1,
-            width2
-          );
-
-
-        /*
-         * Force credit-card
-         * aspect ratio.
-
-         * This prevents badly
-         * distorted output.
-         */
-
-        const outputWidth =
-          Math.round(
-            detectedWidth
-          );
-
-
-        const outputHeight =
-          Math.round(
-            outputWidth /
-            1.586
-          );
-
-
-        /*
-         * Perspective transform
-         */
-
-        processingText.textContent =
-          "Straightening card...";
-
-
-        const sourcePoints =
-          cv.matFromArray(
-            4,
-            1,
-            cv.CV_32FC2,
-            [
-
-              ordered.tl.x,
-              ordered.tl.y,
-
-              ordered.tr.x,
-              ordered.tr.y,
-
-              ordered.br.x,
-              ordered.br.y,
-
-              ordered.bl.x,
-              ordered.bl.y
-
-            ]
-          );
-
-
-        const destinationPoints =
-          cv.matFromArray(
-            4,
-            1,
-            cv.CV_32FC2,
-            [
-
-              0,
-              0,
-
-              outputWidth - 1,
-              0,
-
-              outputWidth - 1,
-              outputHeight - 1,
-
-              0,
-              outputHeight - 1
-
-            ]
-          );
-
-
-        const transform =
-          cv.getPerspectiveTransform(
-            sourcePoints,
-            destinationPoints
-          );
-
-
-        const result =
-          new cv.Mat();
-
-
-        cv.warpPerspective(
-          src,
-          result,
-          transform,
-
-          new cv.Size(
-            outputWidth,
-            outputHeight
-          ),
-
-          cv.INTER_LINEAR,
-
-          cv.BORDER_CONSTANT,
-
-          new cv.Scalar()
-        );
-
-
-        /*
-         * Show successful detection
-         */
-
-        documentGuide.classList.add(
-          "detected"
-        );
-
-
-        edgeStatus.textContent =
-          "✓ Card detected";
-
-
-        /*
-         * Convert result to image
-         */
-
-        cv.imshow(
-          processingCanvas,
-          result
-        );
-
-
-        const data =
-          processingCanvas.toDataURL(
-            "image/jpeg",
-            0.94
-          );
-
-
-        /*
-         * Cleanup
-         */
-
-        cleanup(
-          src,
-          small,
-          gray,
-          blurred,
-          edges,
-          contours,
-          hierarchy,
-          sourcePoints,
-          destinationPoints,
-          transform,
-          result
-        );
-
-
-        resolve(data);
-
-      } catch (error) {
-
-        console.error(
-          "Card detection:",
-          error
-        );
-
-
-        documentGuide.classList.remove(
-          "detected"
-        );
-
-
-        edgeStatus.textContent =
-          "Manual capture mode";
-
-
-        resolve(null);
       }
 
+
+      contour.delete();
     }
-  );
-}
 
 
-/* =========================================================
-   POINTS
-========================================================= */
+    /*
+     * No suitable card.
+     */
 
-function getPoints(
-  contour
-) {
+    if (
+      !bestContour
+    ) {
 
-  const points = [];
+      cleanup(
+        src,
+        small,
+        gray,
+        blurred,
+        edges,
+        contours,
+        hierarchy
+      );
 
 
-  for (
-    let i = 0;
-    i < contour.rows;
-    i++
-  ) {
+      documentGuide.classList.remove(
+        "detected"
+      );
 
-    points.push({
 
-      x:
-        contour.data32S[
-          i * 2
-        ],
+      edgeStatus.textContent =
+        "Manual capture";
 
-      y:
-        contour.data32S[
-          i * 2 + 1
+
+      return null;
+    }
+
+
+    /*
+     * Read points.
+     */
+
+    const points =
+      [];
+
+
+    for (
+      let i = 0;
+      i < bestContour.rows;
+      i++
+    ) {
+
+      points.push({
+
+        x:
+          bestContour.data32S[
+            i * 2
+          ],
+
+        y:
+          bestContour.data32S[
+            i * 2 + 1
+          ]
+
+      });
+
+    }
+
+
+    bestContour.delete();
+
+
+    if (
+      points.length !== 4
+    ) {
+
+      cleanup(
+        src,
+        small,
+        gray,
+        blurred,
+        edges,
+        contours,
+        hierarchy
+      );
+
+      return null;
+    }
+
+
+    /*
+     * Convert to original coordinates.
+     */
+
+    const originalPoints =
+      points.map(
+        point => ({
+
+          x:
+            point.x /
+            scale,
+
+          y:
+            point.y /
+            scale
+
+        })
+      );
+
+
+    const ordered =
+      orderPoints(
+        originalPoints
+      );
+
+
+    /*
+     * Width.
+     */
+
+    const widthTop =
+      distance(
+        ordered.tl,
+        ordered.tr
+      );
+
+
+    const widthBottom =
+      distance(
+        ordered.bl,
+        ordered.br
+      );
+
+
+    const outputWidth =
+      Math.round(
+        Math.max(
+          widthTop,
+          widthBottom
+        )
+      );
+
+
+    /*
+     * Force credit-card ratio.
+     */
+
+    const outputHeight =
+      Math.round(
+        outputWidth /
+        1.586
+      );
+
+
+    /*
+     * Perspective transformation.
+     */
+
+    processingText.textContent =
+      "Straightening card...";
+
+
+    const sourcePoints =
+      cv.matFromArray(
+
+        4,
+        1,
+
+        cv.CV_32FC2,
+
+        [
+
+          ordered.tl.x,
+          ordered.tl.y,
+
+          ordered.tr.x,
+          ordered.tr.y,
+
+          ordered.br.x,
+          ordered.br.y,
+
+          ordered.bl.x,
+          ordered.bl.y
+
         ]
 
-    });
+      );
 
+
+    const destinationPoints =
+      cv.matFromArray(
+
+        4,
+        1,
+
+        cv.CV_32FC2,
+
+        [
+
+          0,
+          0,
+
+          outputWidth - 1,
+          0,
+
+          outputWidth - 1,
+          outputHeight - 1,
+
+          0,
+          outputHeight - 1
+
+        ]
+
+      );
+
+
+    const transform =
+      cv.getPerspectiveTransform(
+        sourcePoints,
+        destinationPoints
+      );
+
+
+    const result =
+      new cv.Mat();
+
+
+    cv.warpPerspective(
+
+      src,
+
+      result,
+
+      transform,
+
+      new cv.Size(
+        outputWidth,
+        outputHeight
+      ),
+
+      cv.INTER_LINEAR,
+
+      cv.BORDER_CONSTANT,
+
+      new cv.Scalar()
+
+    );
+
+
+    /*
+     * Display successful detection.
+     */
+
+    documentGuide.classList.add(
+      "detected"
+    );
+
+    edgeStatus.textContent =
+      "✓ Card detected";
+
+
+    /*
+     * Convert back to image.
+     */
+
+    cv.imshow(
+      processingCanvas,
+      result
+    );
+
+
+    const image =
+      processingCanvas.toDataURL(
+        "image/jpeg",
+        0.95
+      );
+
+
+    cleanup(
+      src,
+      small,
+      gray,
+      blurred,
+      edges,
+      contours,
+      hierarchy,
+      sourcePoints,
+      destinationPoints,
+      transform,
+      result
+    );
+
+
+    return image;
+
+
+  } catch (error) {
+
+    console.error(
+      "Detection error:",
+      error
+    );
+
+
+    documentGuide.classList.remove(
+      "detected"
+    );
+
+    edgeStatus.textContent =
+      "Manual capture";
+
+
+    return null;
   }
-
-
-  return points;
 }
 
 
 /* =========================================================
-   ORDER POINTS
+   ORDER CORNERS
 ========================================================= */
 
 function orderPoints(
   points
 ) {
 
-  const sums =
-    points.map(
-      p =>
-        p.x + p.y
-    );
+  let tl =
+    points[0];
+
+  let tr =
+    points[0];
+
+  let br =
+    points[0];
+
+  let bl =
+    points[0];
 
 
-  const differences =
-    points.map(
-      p =>
-        p.x - p.y
-    );
+  let minSum =
+    Infinity;
+
+  let maxSum =
+    -Infinity;
+
+  let minDiff =
+    Infinity;
+
+  let maxDiff =
+    -Infinity;
 
 
-  const tlIndex =
-    sums.indexOf(
-      Math.min(
-        ...sums
-      )
-    );
+  points.forEach(
+    point => {
+
+      const sum =
+        point.x +
+        point.y;
+
+      const diff =
+        point.x -
+        point.y;
 
 
-  const brIndex =
-    sums.indexOf(
-      Math.max(
-        ...sums
-      )
-    );
+      if (
+        sum <
+        minSum
+      ) {
+
+        minSum =
+          sum;
+
+        tl =
+          point;
+      }
 
 
-  const trIndex =
-    differences.indexOf(
-      Math.max(
-        ...differences
-      )
-    );
+      if (
+        sum >
+        maxSum
+      ) {
+
+        maxSum =
+          sum;
+
+        br =
+          point;
+      }
 
 
-  const blIndex =
-    differences.indexOf(
-      Math.min(
-        ...differences
-      )
-    );
+      if (
+        diff >
+        maxDiff
+      ) {
+
+        maxDiff =
+          diff;
+
+        tr =
+          point;
+      }
+
+
+      if (
+        diff <
+        minDiff
+      ) {
+
+        minDiff =
+          diff;
+
+        bl =
+          point;
+      }
+
+    }
+  );
 
 
   return {
-
-    tl:
-      points[tlIndex],
-
-    tr:
-      points[trIndex],
-
-    br:
-      points[brIndex],
-
-    bl:
-      points[blIndex]
-
+    tl,
+    tr,
+    br,
+    bl
   };
 }
 
@@ -1469,7 +1460,7 @@ function distance(
 
 
 /* =========================================================
-   CLEANUP OPENCV
+   CLEANUP
 ========================================================= */
 
 function cleanup(
@@ -1486,9 +1477,7 @@ function cleanup(
       ) {
 
         try {
-
           object.delete();
-
         } catch (_) {}
 
       }
@@ -1504,14 +1493,14 @@ function cleanup(
 
 function showPreview() {
 
-  const number =
+  const pageNumber =
     pages.length + 1;
 
 
   document.getElementById(
     "previewTitle"
   ).textContent =
-    `Page ${number}`;
+    `Page ${pageNumber}`;
 
 
   frontPreview.src =
@@ -1539,14 +1528,11 @@ retakeFrontBtn.addEventListener(
     currentSide =
       "front";
 
-
     updateCameraUI();
-
 
     showScreen(
       cameraScreen
     );
-
 
     await startCamera();
   }
@@ -1564,14 +1550,11 @@ retakeBackBtn.addEventListener(
     currentSide =
       "back";
 
-
     updateCameraUI();
-
 
     showScreen(
       cameraScreen
     );
-
 
     await startCamera();
   }
@@ -1625,11 +1608,9 @@ addPageBtn.addEventListener(
 
     updateCameraUI();
 
-
     showScreen(
       cameraScreen
     );
-
 
     await startCamera();
   }
@@ -1678,7 +1659,6 @@ finishBtn.addEventListener(
 
 
     renderPages();
-
 
     showScreen(
       documentsScreen
@@ -1755,13 +1735,11 @@ function renderPages() {
             Retake Front
           </button>
 
-
           <button
             data-action="back"
             data-index="${index}">
             Retake Back
           </button>
-
 
           <button
             data-action="delete"
@@ -1811,10 +1789,6 @@ pagesList.addEventListener(
       button.dataset.action;
 
 
-    /*
-     * DELETE
-     */
-
     if (
       action ===
       "delete"
@@ -1825,16 +1799,11 @@ pagesList.addEventListener(
         1
       );
 
-
       renderPages();
 
       return;
     }
 
-
-    /*
-     * RETAKE FRONT
-     */
 
     if (
       action ===
@@ -1864,22 +1833,15 @@ pagesList.addEventListener(
 
       updateCameraUI();
 
-
       showScreen(
         cameraScreen
       );
 
-
       await startCamera();
-
 
       return;
     }
 
-
-    /*
-     * RETAKE BACK
-     */
 
     if (
       action ===
@@ -1909,11 +1871,9 @@ pagesList.addEventListener(
 
       updateCameraUI();
 
-
       showScreen(
         cameraScreen
       );
-
 
       await startCamera();
     }
@@ -1923,7 +1883,7 @@ pagesList.addEventListener(
 
 
 /* =========================================================
-   ADD ANOTHER
+   ANOTHER CARD
 ========================================================= */
 
 addAnotherBtn.addEventListener(
@@ -1945,11 +1905,9 @@ addAnotherBtn.addEventListener(
 
     updateCameraUI();
 
-
     showScreen(
       cameraScreen
     );
-
 
     await startCamera();
   }
@@ -2008,11 +1966,10 @@ cancelCameraBtn.addEventListener(
 
 
     if (
-      pages.length > 0
+      pages.length
     ) {
 
       renderPages();
-
 
       showScreen(
         documentsScreen
@@ -2067,15 +2024,6 @@ async function generatePDF() {
       window.jspdf;
 
 
-    /*
-     * A4 portrait.
-
-     * Each PDF page contains:
-
-     * TOP = Front
-     * BOTTOM = Back
-     */
-
     const pdf =
       new jsPDF({
 
@@ -2114,12 +2062,12 @@ async function generatePDF() {
       7;
 
 
-    const usableWidth =
+    const availableWidth =
       pageWidth -
       margin * 2;
 
 
-    const cardHeight =
+    const availableHeight =
       (
         pageHeight -
         margin * 2 -
@@ -2129,16 +2077,23 @@ async function generatePDF() {
 
 
     /*
-     * Keep card's
-     * credit-card ratio.
+     * Credit-card ratio.
      */
 
     const cardWidth =
       Math.min(
-        usableWidth,
-        cardHeight *
+
+        availableWidth,
+
+        availableHeight *
         1.586
+
       );
+
+
+    const cardHeight =
+      cardWidth /
+      1.586;
 
 
     const x =
@@ -2155,7 +2110,7 @@ async function generatePDF() {
     ) {
 
       processingText.textContent =
-        `Creating PDF ${
+        `Creating PDF page ${
           i + 1
         } of ${
           pages.length
@@ -2174,8 +2129,13 @@ async function generatePDF() {
 
 
       /*
-       * FRONT LABEL
+       * FRONT
        */
+
+      const frontY =
+        margin +
+        labelHeight;
+
 
       pdf.setFontSize(
         9
@@ -2186,14 +2146,12 @@ async function generatePDF() {
         `Page ${
           i + 1
         } - FRONT`,
+
         margin,
+
         margin + 4
       );
 
-
-      /*
-       * FRONT
-       */
 
       pdf.addImage(
 
@@ -2203,8 +2161,7 @@ async function generatePDF() {
 
         x,
 
-        margin +
-        labelHeight,
+        frontY,
 
         cardWidth,
 
@@ -2218,12 +2175,13 @@ async function generatePDF() {
 
 
       /*
-       * BACK LABEL
+       * BACK
        */
 
       const backY =
         pageHeight / 2 +
-        gap / 2;
+        gap / 2 +
+        labelHeight;
 
 
       pdf.setFontSize(
@@ -2238,13 +2196,11 @@ async function generatePDF() {
 
         margin,
 
-        backY
+        pageHeight / 2 +
+        gap / 2 +
+        4
       );
 
-
-      /*
-       * BACK
-       */
 
       pdf.addImage(
 
@@ -2254,8 +2210,7 @@ async function generatePDF() {
 
         x,
 
-        backY +
-        labelHeight,
+        backY,
 
         cardWidth,
 
@@ -2270,28 +2225,27 @@ async function generatePDF() {
     }
 
 
-    /*
-     * DOWNLOAD
-     */
-
     pdf.save(
-      `ID-Card-Scan-${
-        getDate()
-      }.pdf`
+      `Card-Scan-${getDate()}.pdf`
     );
 
 
     hideProcessing();
 
+
   } catch (error) {
 
-    console.error(error);
+    console.error(
+      "PDF error:",
+      error
+    );
+
 
     hideProcessing();
 
 
     alert(
-      "PDF creation failed."
+      "Could not create PDF."
     );
   }
 }
@@ -2303,35 +2257,29 @@ async function generatePDF() {
 
 function getDate() {
 
-  const date =
+  const d =
     new Date();
 
 
-  const year =
-    date.getFullYear();
+  return [
 
+    d.getFullYear(),
 
-  const month =
     String(
-      date.getMonth() + 1
+      d.getMonth() + 1
     ).padStart(
       2,
       "0"
-    );
+    ),
 
-
-  const day =
     String(
-      date.getDate()
+      d.getDate()
     ).padStart(
       2,
       "0"
-    );
+    )
 
-
-  return (
-    `${year}-${month}-${day}`
-  );
+  ].join("-");
 }
 
 
@@ -2340,12 +2288,11 @@ function getDate() {
 ========================================================= */
 
 function showProcessing(
-  message
+  text
 ) {
 
   processingText.textContent =
-    message;
-
+    text;
 
   processingModal.classList.add(
     "show"
@@ -2359,26 +2306,3 @@ function hideProcessing() {
     "show"
   );
 }
-
-
-/* =========================================================
-   PAGE VISIBILITY
-========================================================= */
-
-document.addEventListener(
-  "visibilitychange",
-  () => {
-
-    if (
-      document.visibilityState ===
-      "hidden"
-    ) {
-
-      /*
-       * Don't leave camera running
-       * unnecessarily.
-       */
-    }
-
-  }
-);
