@@ -10,7 +10,7 @@
 
   <meta name="theme-color" content="#000000">
 
-  <title>ID Card Scanner</title>
+  <title>Card Scanner</title>
 
   <link rel="stylesheet" href="style.css">
 
@@ -23,20 +23,19 @@
 
 <body>
 
-  <!-- START -->
-  <section id="startScreen" class="screen start-screen">
+  <!-- ================= START ================= -->
+
+  <section id="startScreen" class="screen active">
 
     <div class="start-card">
 
-      <div class="logo">
-        💳
-      </div>
+      <div class="logo">💳</div>
 
-      <h1>ID Card Scanner</h1>
+      <h1>Card Scanner</h1>
 
       <p>
-        Scan the Front and Back of your card.
-        Add unlimited cards and download them as one PDF.
+        Scan the front and back of your card.
+        Add unlimited pages and download everything as one PDF.
       </p>
 
       <button id="startBtn" class="primary-btn">
@@ -48,14 +47,13 @@
   </section>
 
 
-  <!-- CAMERA -->
-  <section id="cameraScreen" class="screen camera-screen">
+  <!-- ================= CAMERA ================= -->
 
-    <div class="camera-top">
+  <section id="cameraScreen" class="camera-screen screen">
 
-      <button
-        id="cancelCameraBtn"
-        class="camera-small-btn">
+    <div class="camera-header">
+
+      <button id="cancelCameraBtn" class="round-btn">
         ✕
       </button>
 
@@ -71,16 +69,14 @@
 
       </div>
 
-      <button
-        id="switchCameraBtn"
-        class="camera-small-btn">
+      <button id="switchCameraBtn" class="round-btn">
         🔄
       </button>
 
     </div>
 
 
-    <div class="camera-view">
+    <div class="camera-container">
 
       <video
         id="video"
@@ -90,11 +86,11 @@
       </video>
 
 
-      <!-- DARK OVERLAY -->
-      <div class="scanner-overlay"></div>
+      <div class="camera-overlay"></div>
 
 
       <!-- CREDIT CARD GUIDE -->
+
       <div
         id="documentGuide"
         class="document-guide">
@@ -107,20 +103,16 @@
       </div>
 
 
-      <div
-        id="edgeStatus"
-        class="edge-status">
-
+      <div id="edgeStatus" class="edge-status">
         Position card inside the frame
-
       </div>
 
     </div>
 
 
-    <div class="camera-bottom">
+    <div class="camera-footer">
 
-      <div class="camera-instruction">
+      <div class="instruction">
 
         <strong id="instructionTitle">
           Scan Front
@@ -133,12 +125,8 @@
       </div>
 
 
-      <button
-        id="captureBtn"
-        class="capture-btn">
-
+      <button id="captureBtn" class="capture-btn">
         <span></span>
-
       </button>
 
     </div>
@@ -146,19 +134,18 @@
   </section>
 
 
-  <!-- PREVIEW -->
-  <section
-    id="previewScreen"
-    class="screen content-screen">
+  <!-- ================= PREVIEW ================= -->
 
-    <div class="page-heading">
+  <section id="previewScreen" class="content-screen screen">
+
+    <div class="heading">
 
       <h2 id="previewTitle">
         Page 1
       </h2>
 
       <p>
-        Check Front and Back
+        Check the Front and Back
       </p>
 
     </div>
@@ -178,9 +165,7 @@
 
         </div>
 
-        <img
-          id="frontPreview"
-          alt="Front">
+        <img id="frontPreview" alt="Front">
 
       </div>
 
@@ -197,9 +182,7 @@
 
         </div>
 
-        <img
-          id="backPreview"
-          alt="Back">
+        <img id="backPreview" alt="Back">
 
       </div>
 
@@ -208,21 +191,12 @@
 
     <div class="preview-buttons">
 
-      <button
-        id="addPageBtn"
-        class="primary-btn">
-
+      <button id="addPageBtn" class="primary-btn">
         + Add Next Page
-
       </button>
 
-
-      <button
-        id="finishBtn"
-        class="download-btn">
-
+      <button id="finishBtn" class="download-btn">
         📄 Finish & Download PDF
-
       </button>
 
     </div>
@@ -230,12 +204,11 @@
   </section>
 
 
-  <!-- ALL PAGES -->
-  <section
-    id="documentsScreen"
-    class="screen content-screen">
+  <!-- ================= DOCUMENTS ================= -->
 
-    <div class="page-heading">
+  <section id="documentsScreen" class="content-screen screen">
+
+    <div class="heading">
 
       <h2>
         Scanned Documents
@@ -248,38 +221,21 @@
     </div>
 
 
-    <div
-      id="pagesList"
-      class="pages-list">
-    </div>
+    <div id="pagesList" class="pages-list"></div>
 
 
     <div class="bottom-buttons">
 
-      <button
-        id="addAnotherBtn"
-        class="primary-btn">
-
+      <button id="addAnotherBtn" class="primary-btn">
         + Scan Another Card
-
       </button>
 
-
-      <button
-        id="downloadPdfBtn"
-        class="download-btn">
-
+      <button id="downloadPdfBtn" class="download-btn">
         📄 Download PDF
-
       </button>
 
-
-      <button
-        id="clearAllBtn"
-        class="danger-btn">
-
+      <button id="clearAllBtn" class="danger-btn">
         Clear All
-
       </button>
 
     </div>
@@ -287,31 +243,27 @@
   </section>
 
 
-  <!-- HIDDEN CANVAS -->
-  <canvas
-    id="captureCanvas">
-  </canvas>
+  <!-- ================= CANVAS ================= -->
 
-  <canvas
-    id="processingCanvas">
-  </canvas>
+  <canvas id="captureCanvas"></canvas>
+
+  <canvas id="processingCanvas"></canvas>
 
 
-  <!-- PROCESSING -->
-  <div
-    id="processingModal"
-    class="modal">
+  <!-- ================= PROCESSING ================= -->
+
+  <div id="processingModal" class="modal">
 
     <div class="modal-card">
 
       <div class="spinner"></div>
 
       <h3>
-        Processing...
+        Processing
       </h3>
 
       <p id="processingText">
-        Detecting card edges
+        Please wait...
       </p>
 
     </div>
